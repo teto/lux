@@ -6,11 +6,9 @@ mod rock_source;
 mod serde_util;
 mod test_spec;
 
-use crate::rockspec::ambassador_impl_LocalRockspec;
-use crate::rockspec::RockBinaries;
+use crate::rockspec::RemoteRockspec;
 use std::{collections::HashMap, fmt::Display, io, path::PathBuf, str::FromStr};
 
-use ambassador::Delegate;
 use mlua::{FromLua, Lua, LuaSerdeExt, Value};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
@@ -29,7 +27,7 @@ use crate::{
     config::{LuaVersion, LuaVersionUnset},
     hash::HasIntegrity,
     package::{PackageName, PackageReq, PackageVersion},
-    rockspec::{LocalRockspec, RemoteRockspec},
+    rockspec::LocalRockspec,
 };
 
 #[derive(Error, Debug)]
@@ -59,6 +57,7 @@ pub struct LocalLuaRockspec {
     test_dependencies: PerPlatform<Vec<PackageReq>>,
     build: PerPlatform<BuildSpec>,
     test: PerPlatform<TestSpec>,
+    source: PerPlatform<LocalRockSource>,
     /// The original content of this rockspec, needed by luarocks
     raw_content: String,
     /// The sha256 of this rockspec
@@ -83,6 +82,7 @@ impl LocalLuaRockspec {
             external_dependencies: globals.get("external_dependencies")?,
             build: globals.get("build")?,
             test: globals.get("test")?,
+            source: globals.get("source")?,
             hash: Integrity::from(rockspec_content),
             raw_content: rockspec_content.into(),
         };
@@ -148,6 +148,10 @@ impl LocalRockspec for LocalLuaRockspec {
         &self.test
     }
 
+    fn source(&self) -> &PerPlatform<LocalRockSource> {
+        &self.source
+    }
+
     fn supported_platforms(&self) -> &PlatformSupport {
         &self.supported_platforms
     }
@@ -160,13 +164,22 @@ impl LocalRockspec for LocalLuaRockspec {
         &mut self.test
     }
 
+    fn source_mut(&mut self) -> &mut PerPlatform<LocalRockSource> {
+        &mut self.source
+    }
+
     fn format(&self) -> &Option<RockspecFormat> {
         &self.rockspec_format
     }
 }
 
-#[derive(Clone, Debug, Delegate)]
-#[delegate(LocalRockspec, target = "local")]
+impl HasIntegrity for LocalLuaRockspec {
+    fn hash(&self) -> io::Result<Integrity> {
+        Ok(self.hash.to_owned())
+    }
+}
+
+#[derive(Clone, Debug)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct RemoteLuaRockspec {
     local: LocalLuaRockspec,
@@ -190,6 +203,57 @@ impl RemoteLuaRockspec {
 }
 
 impl RemoteRockspec for RemoteLuaRockspec {
+    fn package(&self) -> &PackageName {
+        &self.local.package
+    }
+
+    fn version(&self) -> &PackageVersion {
+        &self.local.version
+    }
+
+    fn description(&self) -> &RockDescription {
+        &self.local.description
+    }
+
+    fn dependencies(&self) -> &PerPlatform<Vec<PackageReq>> {
+        &self.local.dependencies
+    }
+
+    fn build_dependencies(&self) -> &PerPlatform<Vec<PackageReq>> {
+        &self.local.build_dependencies
+    }
+
+    fn external_dependencies(&self) -> &PerPlatform<HashMap<String, ExternalDependencySpec>> {
+        &self.local.external_dependencies
+    }
+
+    fn test_dependencies(&self) -> &PerPlatform<Vec<PackageReq>> {
+        &self.local.test_dependencies
+    }
+
+    fn build(&self) -> &PerPlatform<BuildSpec> {
+        &self.local.build
+    }
+
+    fn test(&self) -> &PerPlatform<TestSpec> {
+        &self.local.test
+    }
+    fn supported_platforms(&self) -> &PlatformSupport {
+        &self.local.supported_platforms
+    }
+
+    fn build_mut(&mut self) -> &mut PerPlatform<BuildSpec> {
+        &mut self.local.build
+    }
+
+    fn test_mut(&mut self) -> &mut PerPlatform<TestSpec> {
+        &mut self.local.test
+    }
+
+    fn format(&self) -> &Option<RockspecFormat> {
+        &self.local.rockspec_format
+    }
+
     fn source(&self) -> &PerPlatform<RemoteRockSource> {
         &self.source
     }

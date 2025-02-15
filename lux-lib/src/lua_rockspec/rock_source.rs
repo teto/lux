@@ -11,8 +11,9 @@ use super::{
     PerPlatform, PerPlatformWrapper, PlatformOverridable,
 };
 
-#[derive(Deserialize, Clone, Debug, PartialEq)]
+#[derive(Default, Deserialize, Clone, Debug, PartialEq)]
 pub struct LocalRockSource {
+    pub source_spec: Option<RockSourceSpec>,
     pub integrity: Option<Integrity>,
     pub archive_name: Option<String>,
     pub unpack_dir: Option<PathBuf>,
@@ -46,10 +47,36 @@ impl FromPlatformOverridable<RockSourceInternal, Self> for LocalRockSource {
     type Err = RockSourceError;
 
     fn from_platform_overridable(internal: RockSourceInternal) -> Result<Self, Self::Err> {
+        let source_spec = if let Some(url) = internal.url {
+            // The rockspec.source table allows invalid combinations
+            // This ensures that invalid combinations are caught while parsing.
+            let url = SourceUrl::from_str(&url)?;
+
+            match (url, internal.tag, internal.branch) {
+                (source, None, None) => Ok(Some(RockSourceSpec::default_from_source_url(source))),
+                (SourceUrl::Git(url), Some(tag), None) => {
+                    Ok(Some(RockSourceSpec::Git(GitSource {
+                        url,
+                        checkout_ref: Some(tag),
+                    })))
+                }
+                (SourceUrl::Git(url), None, Some(branch)) => {
+                    Ok(Some(RockSourceSpec::Git(GitSource {
+                        url,
+                        checkout_ref: Some(branch),
+                    })))
+                }
+                _ => Err(RockSourceError::InvalidCombination),
+            }?
+        } else {
+            None
+        };
+
         Ok(LocalRockSource {
             integrity: internal.hash,
             archive_name: internal.file,
             unpack_dir: internal.dir,
+            source_spec,
         })
     }
 }
@@ -60,24 +87,20 @@ impl FromPlatformOverridable<RockSourceInternal, Self> for RemoteRockSource {
     fn from_platform_overridable(internal: RockSourceInternal) -> Result<Self, Self::Err> {
         let local = LocalRockSource::from_platform_overridable(internal.clone())?;
 
-        // The rockspec.source table allows invalid combinations
-        // This ensures that invalid combinations are caught while parsing.
-        let url = SourceUrl::from_str(&internal.url.ok_or(RockSourceError::SourceUrlMissing)?)?;
+        Ok(RemoteRockSource {
+            source_spec: local
+                .source_spec
+                .clone()
+                .ok_or(RockSourceError::SourceUrlMissing)?,
+            local,
+        })
+    }
+}
 
-        let source_spec = match (url, internal.tag, internal.branch) {
-            (source, None, None) => Ok(RockSourceSpec::default_from_source_url(source)),
-            (SourceUrl::Git(url), Some(tag), None) => Ok(RockSourceSpec::Git(GitSource {
-                url,
-                checkout_ref: Some(tag),
-            })),
-            (SourceUrl::Git(url), None, Some(branch)) => Ok(RockSourceSpec::Git(GitSource {
-                url,
-                checkout_ref: Some(branch),
-            })),
-            _ => Err(RockSourceError::InvalidCombination),
-        }?;
-
-        Ok(RemoteRockSource { source_spec, local })
+impl FromLua for PerPlatform<LocalRockSource> {
+    fn from_lua(value: Value, lua: &Lua) -> mlua::Result<Self> {
+        let wrapper = PerPlatformWrapper::from_lua(value, lua)?;
+        Ok(wrapper.un_per_platform)
     }
 }
 

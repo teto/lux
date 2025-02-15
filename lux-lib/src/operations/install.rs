@@ -18,7 +18,7 @@ use crate::{
     progress::{MultiProgress, Progress, ProgressBar},
     project::{Project, ProjectTreeError},
     remote_package_db::{RemotePackageDB, RemotePackageDBError, RemotePackageDbIntegrityError},
-    rockspec::LocalRockspec,
+    rockspec::RemoteRockspec,
     tree::Tree,
 };
 
@@ -330,7 +330,7 @@ async fn install_rockspec(
         .constraint(constraint)
         .behaviour(behaviour)
         .source(source)
-        .build()
+        .build_remote()
         .await
         .map_err(|err| InstallError::BuildError(package, err))?;
 

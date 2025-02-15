@@ -15,11 +15,11 @@ use crate::{
     lockfile::{ProjectLockfile, ReadOnly},
     lua_rockspec::{
         ExternalDependencySpec, LuaRockspecError, LuaVersionError, PartialLuaRockspec,
-        PartialRockspecError, RemoteLuaRockspec, RockSourceSpec,
+        PartialRockspecError, RemoteLuaRockspec,
     },
     package::PackageReq,
     remote_package_db::RemotePackageDB,
-    rockspec::{LuaVersionCompatibility, RemoteRockspec},
+    rockspec::LuaVersionCompatibility,
     tree::Tree,
 };
 
@@ -162,17 +162,6 @@ impl Project {
         } else {
             Ok(None)
         }
-    }
-
-    /// Create a RockSpec with the source set to the project root.
-    pub fn new_local_rockspec(&self) -> Result<RemoteLuaRockspec, IntoRockspecError> {
-        let mut rocks = self.rockspec()?;
-        let mut source = rocks.source().current_platform().clone();
-        source.source_spec = RockSourceSpec::File(self.root().to_path_buf());
-        source.local.archive_name = None;
-        source.local.integrity = None;
-        rocks.source_mut().current_platform_set(source);
-        Ok(rocks)
     }
 
     fn tree_root_dir(&self) -> PathBuf {
@@ -332,9 +321,10 @@ mod tests {
 
     use super::*;
     use crate::{
+        lua_rockspec::RockSourceSpec,
         manifest::{Manifest, ManifestMetadata},
         package::PackageReq,
-        rockspec::LocalRockspec,
+        rockspec::RemoteRockspec,
     };
 
     #[tokio::test]
@@ -397,7 +387,7 @@ mod tests {
         // Reparse the lux.toml (not usually necessary, but we want to test that the file was
         // written correctly)
         let project = Project::from(&project_root).unwrap().unwrap();
-        let validated_toml = project.toml().into_validated().unwrap();
+        let validated_toml = project.toml().into_remote().unwrap();
         assert_eq!(
             strip_lua(validated_toml.dependencies().current_platform()),
             expected_dependencies
@@ -432,7 +422,7 @@ mod tests {
 
         assert!(extra_rockspec.is_some());
 
-        let rocks = project.toml().into_validated().unwrap();
+        let rocks = project.toml().into_remote().unwrap();
 
         assert_eq!(rocks.package().to_string(), "custom-package");
         assert_eq!(rocks.version().to_string(), "2.0.0-1");

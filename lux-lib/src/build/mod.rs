@@ -1,6 +1,7 @@
 use crate::lockfile::RemotePackageSourceUrl;
+use crate::lua_rockspec::LuaVersionError;
 use crate::rockspec::LuaVersionCompatibility;
-use crate::{lua_rockspec::LuaVersionError, rockspec::RemoteRockspec};
+use crate::rockspec::{LocalRockspec, RemoteRockspec};
 use std::{io, path::Path, process::ExitStatus};
 
 use crate::{
@@ -46,7 +47,7 @@ pub mod variables;
 /// over how a package should be built.
 #[derive(Builder)]
 #[builder(start_fn = new, finish_fn(name = _build, vis = ""))]
-pub struct Build<'a, R: RemoteRockspec + HasIntegrity> {
+pub struct Build<'a, R> {
     #[builder(start_fn)]
     rockspec: &'a R,
     #[builder(start_fn)]
@@ -67,12 +68,29 @@ pub struct Build<'a, R: RemoteRockspec + HasIntegrity> {
 }
 
 // Overwrite the `build()` function to use our own instead.
-impl<R: RemoteRockspec + HasIntegrity, State> BuildBuilder<'_, R, State>
+impl<R, State> BuildBuilder<'_, R, State>
 where
     State: build_builder::State + build_builder::IsComplete,
+    R: RemoteRockspec + HasIntegrity,
 {
-    pub async fn build(self) -> Result<LocalPackage, BuildError> {
+    pub async fn build_remote(self) -> Result<LocalPackage, BuildError> {
         do_build(self._build()).await
+    }
+}
+
+// Overwrite the `build()` function to use our own instead.
+// NOTE: These impls are broken into two separate impl blocks
+// so autocompletion doesn't recommend both `build_remote` and `build_local`.
+impl<R, State> BuildBuilder<'_, R, State>
+where
+    State: build_builder::State + build_builder::IsComplete,
+    R: LocalRockspec,
+{
+    pub async fn build_local(self) -> Result<LocalPackage, BuildError>
+    where
+        R: LocalRockspec,
+    {
+        todo!("local build code here")
     }
 }
 

@@ -21,7 +21,7 @@ use crate::{
     path::Paths,
     progress::{MultiProgress, Progress, ProgressBar},
     remote_package_db::{RemotePackageDB, RemotePackageDBError},
-    rockspec::{LocalRockspec, RemoteRockspec},
+    rockspec::RemoteRockspec,
     tree::Tree,
 };
 
@@ -117,7 +117,7 @@ impl LuaRocksInstallation {
             let rockspec = RemoteLuaRockspec::new(LUAROCKS_ROCKSPEC).unwrap();
             let pkg = Build::new(&rockspec, &self.tree, &self.config, progress)
                 .constraint(luarocks_req.version_req().clone().into())
-                .build()
+                .build_remote()
                 .await?;
             lockfile.add(&pkg);
         }
@@ -186,7 +186,7 @@ impl LuaRocksInstallation {
                 let pkg = Build::new(rockspec, &tree, &config, &bar)
                     .constraint(install_spec.spec.constraint())
                     .behaviour(install_spec.build_behaviour)
-                    .build()
+                    .build_remote()
                     .await?;
 
                 bar.map(|b| b.finish_and_clear());

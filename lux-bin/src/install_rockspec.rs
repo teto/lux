@@ -13,7 +13,7 @@ use lux_lib::{
     package::PackageName,
     progress::MultiProgress,
     project::Project,
-    rockspec::{LocalRockspec, LuaVersionCompatibility},
+    rockspec::{LuaVersionCompatibility, RemoteRockspec},
 };
 
 #[derive(Args, Default)]
@@ -77,7 +77,7 @@ pub async fn install_rockspec(data: InstallRockspec, config: Config) -> Result<(
     build::Build::new(&rockspec, &tree, &config, &progress.map(|p| p.new_bar()))
         .pin(pin)
         .behaviour(BuildBehaviour::Force)
-        .build()
+        .build_remote()
         .await?;
 
     Ok(())

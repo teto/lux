@@ -1,10 +1,9 @@
 //! Structs and utilities for `lux.toml`
 
-use crate::rockspec::ambassador_impl_LocalRockspec;
-use crate::rockspec::RockBinaries;
+use crate::lua_rockspec::LocalRockSource;
+use crate::rockspec::RemoteRockspec;
 use std::{collections::HashMap, path::PathBuf};
 
-use ambassador::Delegate;
 use itertools::Itertools;
 use serde::{Deserialize, Deserializer};
 use thiserror::Error;
@@ -23,7 +22,7 @@ use crate::{
         BuildDependencies, Dependencies, PackageName, PackageReq, PackageVersion,
         PackageVersionReq, TestDependencies,
     },
-    rockspec::{latest_lua_version, LocalRockspec, LuaVersionCompatibility, RemoteRockspec},
+    rockspec::{latest_lua_version, LocalRockspec, LuaVersionCompatibility},
 };
 
 fn parse_map_to_package_vec_opt<'de, D>(
@@ -54,6 +53,8 @@ pub enum LocalProjectTomlValidationError {
     PlatformValidationError(#[from] PlatformValidationError),
     #[error("{}copy_directories cannot contain a rockspec name", ._0.as_ref().map(|p| format!("{p}: ")).unwrap_or_default())]
     CopyDirectoriesContainRockspecName(Option<String>),
+    #[error(transparent)]
+    RockSourceError(#[from] RockSourceError),
 }
 
 #[derive(Debug, Error)]
@@ -62,8 +63,6 @@ pub enum RemoteProjectTomlValidationError {
     NoSource,
     #[error(transparent)]
     LocalProjectTomlValidationError(#[from] LocalProjectTomlValidationError),
-    #[error(transparent)]
-    RockSourceError(#[from] RockSourceError),
 }
 
 /// The `lux.toml` file.
@@ -110,12 +109,13 @@ pub struct LocalProjectToml {
     test: PerPlatform<TestSpec>,
     build: PerPlatform<BuildSpec>,
 
+    source: PerPlatform<LocalRockSource>,
+
     // Used for simpler serialization
     internal: PartialProjectToml,
 }
 
-#[derive(Debug, Delegate)]
-#[delegate(LocalRockspec, target = "local")]
+#[derive(Debug)]
 pub struct RemoteProjectToml {
     local: LocalProjectToml,
     source: PerPlatform<RemoteRockSource>,
@@ -176,6 +176,10 @@ impl PartialProjectToml {
             )?),
             build: PerPlatform::new(BuildSpec::from_internal_spec(project.build.clone())?),
             rockspec_format: project.rockspec_format.clone(),
+
+            source: PerPlatform::new(LocalRockSource::from_platform_overridable(
+                self.source.clone().unwrap_or_default(),
+            )?),
         };
 
         let rockspec_file_name = format!("{}-{}.rockspec", validated.package, validated.version);
@@ -206,13 +210,23 @@ impl PartialProjectToml {
     }
 
     pub fn into_remote(&self) -> Result<RemoteProjectToml, RemoteProjectTomlValidationError> {
+        let local = self.into_local()?;
+
         let validated = RemoteProjectToml {
-            source: PerPlatform::new(RemoteRockSource::from_platform_overridable(
-                self.source
-                    .clone()
-                    .ok_or(RemoteProjectTomlValidationError::NoSource)?,
-            )?),
-            local: self.into_local()?,
+            source: local
+                .source
+                .clone()
+                .map(|source| {
+                    Ok::<_, RemoteProjectTomlValidationError>(RemoteRockSource {
+                        source_spec: source
+                            .source_spec
+                            .clone()
+                            .ok_or(RemoteProjectTomlValidationError::NoSource)?,
+                        local: source,
+                    })
+                })
+                .transpose()?,
+            local,
         };
 
         Ok(validated)
@@ -349,8 +363,8 @@ version = "{}""#,
 }
 
 // This is automatically implemented for `RocksTomlValidated` by `Rockspec`,
-// but we also add a special implementation for `ProjectToml` (as providing a lua version)
-// is required even by the non-validated struct.
+// but we also add a special implementation for `ProjectToml` (as providing a lua version
+// is required even by the non-validated struct).
 impl LuaVersionCompatibility for PartialProjectToml {
     fn validate_lua_version(&self, config: &Config) -> Result<(), LuaVersionError> {
         let _ = self.lua_version_matches(config)?;
@@ -457,9 +471,69 @@ impl LocalRockspec for LocalProjectToml {
     fn format(&self) -> &Option<RockspecFormat> {
         &self.rockspec_format
     }
+
+    fn source(&self) -> &PerPlatform<LocalRockSource> {
+        &self.source
+    }
+
+    fn source_mut(&mut self) -> &mut PerPlatform<LocalRockSource> {
+        &mut self.source
+    }
 }
 
 impl RemoteRockspec for RemoteProjectToml {
+    fn package(&self) -> &PackageName {
+        &self.local.package
+    }
+
+    fn version(&self) -> &PackageVersion {
+        &self.local.version
+    }
+
+    fn description(&self) -> &RockDescription {
+        &self.local.description
+    }
+
+    fn supported_platforms(&self) -> &PlatformSupport {
+        &self.local.supported_platforms
+    }
+
+    fn dependencies(&self) -> &PerPlatform<Vec<PackageReq>> {
+        &self.local.dependencies
+    }
+
+    fn build_dependencies(&self) -> &PerPlatform<Vec<PackageReq>> {
+        &self.local.build_dependencies
+    }
+
+    fn external_dependencies(&self) -> &PerPlatform<HashMap<String, ExternalDependencySpec>> {
+        &self.local.external_dependencies
+    }
+
+    fn test_dependencies(&self) -> &PerPlatform<Vec<PackageReq>> {
+        &self.local.test_dependencies
+    }
+
+    fn build(&self) -> &PerPlatform<BuildSpec> {
+        &self.local.build
+    }
+
+    fn test(&self) -> &PerPlatform<TestSpec> {
+        &self.local.test
+    }
+
+    fn build_mut(&mut self) -> &mut PerPlatform<BuildSpec> {
+        &mut self.local.build
+    }
+
+    fn test_mut(&mut self) -> &mut PerPlatform<TestSpec> {
+        &mut self.local.test
+    }
+
+    fn format(&self) -> &Option<RockspecFormat> {
+        &self.local.rockspec_format
+    }
+
     fn source(&self) -> &PerPlatform<RemoteRockSource> {
         &self.source
     }
@@ -478,7 +552,7 @@ mod tests {
     use crate::{
         lua_rockspec::{PartialLuaRockspec, PerPlatform, RemoteLuaRockspec},
         package::PackageReq,
-        rockspec::{LocalRockspec, RemoteRockspec},
+        rockspec::RemoteRockspec,
     };
 
     use super::PartialProjectToml;

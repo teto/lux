@@ -4,20 +4,18 @@ use std::{
     path::PathBuf,
 };
 
-use ambassador::delegatable_trait;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     config::{Config, LuaVersion},
     lua_rockspec::{
-        BuildSpec, ExternalDependencySpec, LuaVersionError, PerPlatform, PlatformSupport,
-        RemoteRockSource, RockDescription, RockspecFormat, TestSpec,
+        BuildSpec, ExternalDependencySpec, LocalRockSource, LuaVersionError, PerPlatform,
+        PlatformSupport, RemoteRockSource, RockDescription, RockspecFormat, TestSpec,
     },
     package::{PackageName, PackageReq, PackageVersion},
 };
 
-#[delegatable_trait]
 pub trait LocalRockspec {
     fn package(&self) -> &PackageName;
     fn version(&self) -> &PackageVersion;
@@ -30,9 +28,11 @@ pub trait LocalRockspec {
 
     fn build(&self) -> &PerPlatform<BuildSpec>;
     fn test(&self) -> &PerPlatform<TestSpec>;
+    fn source(&self) -> &PerPlatform<LocalRockSource>;
 
     fn build_mut(&mut self) -> &mut PerPlatform<BuildSpec>;
     fn test_mut(&mut self) -> &mut PerPlatform<TestSpec>;
+    fn source_mut(&mut self) -> &mut PerPlatform<LocalRockSource>;
 
     fn format(&self) -> &Option<RockspecFormat>;
 
@@ -51,9 +51,38 @@ pub trait LocalRockspec {
 }
 
 /// A trait for querying information about a project from either a rockspec or `lux.toml` file.
-pub trait RemoteRockspec: LocalRockspec {
+pub trait RemoteRockspec {
+    fn package(&self) -> &PackageName;
+    fn version(&self) -> &PackageVersion;
+    fn description(&self) -> &RockDescription;
+    fn supported_platforms(&self) -> &PlatformSupport;
+    fn dependencies(&self) -> &PerPlatform<Vec<PackageReq>>;
+    fn build_dependencies(&self) -> &PerPlatform<Vec<PackageReq>>;
+    fn external_dependencies(&self) -> &PerPlatform<HashMap<String, ExternalDependencySpec>>;
+    fn test_dependencies(&self) -> &PerPlatform<Vec<PackageReq>>;
+
+    fn build(&self) -> &PerPlatform<BuildSpec>;
+    fn test(&self) -> &PerPlatform<TestSpec>;
     fn source(&self) -> &PerPlatform<RemoteRockSource>;
+
+    fn build_mut(&mut self) -> &mut PerPlatform<BuildSpec>;
+    fn test_mut(&mut self) -> &mut PerPlatform<TestSpec>;
     fn source_mut(&mut self) -> &mut PerPlatform<RemoteRockSource>;
+
+    fn format(&self) -> &Option<RockspecFormat>;
+
+    /// Shorthand to extract the binaries that are part of the rockspec.
+    fn binaries(&self) -> RockBinaries {
+        RockBinaries(
+            self.build()
+                .current_platform()
+                .install
+                .bin
+                .keys()
+                .map_into()
+                .collect(),
+        )
+    }
 
     fn to_rockspec_str(&self) -> String;
 }

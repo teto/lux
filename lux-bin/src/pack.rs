@@ -118,7 +118,9 @@ pub async fn pack(args: Pack, config: Config) -> Result<()> {
             let bar = progress.map(|p| p.new_bar());
             let tree = Tree::new(temp_dir.clone(), lua_version.clone())?;
             let config = config.with_tree(temp_dir);
-            let package = Build::new(&rockspec, &tree, &config, &bar).build().await?;
+            let package = Build::new(&rockspec, &tree, &config, &bar)
+                .build_remote()
+                .await?;
             let rock_path = operations::Pack::new(dest_dir, tree, package).pack()?;
             Ok(rock_path)
         }

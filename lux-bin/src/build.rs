@@ -34,7 +34,7 @@ pub async fn build(data: Build, config: Config) -> Result<()> {
     let progress = Arc::clone(&progress_arc);
 
     let tree = project.tree(&config)?;
-    let rocks = project.new_local_rockspec()?;
+    let rocks = project.toml().into_local()?;
 
     let dependencies = rocks
         .dependencies()
@@ -122,7 +122,7 @@ Use --ignore-lockfile to force a new build.
     build::Build::new(&rocks, &tree, &config, &progress.map(|p| p.new_bar()))
         .pin(pin)
         .behaviour(BuildBehaviour::Force)
-        .build()
+        .build_local()
         .await?;
 
     Ok(())

@@ -30,7 +30,7 @@ async fn builtin_build() {
 
     Build::new(&rockspec, &tree, &config, &Progress::Progress(bar))
         .behaviour(Force)
-        .build()
+        .build_remote()
         .await
         .unwrap();
 }
@@ -58,7 +58,7 @@ async fn make_build() {
 
     Build::new(&rockspec, &tree, &config, &Progress::Progress(bar))
         .behaviour(Force)
-        .build()
+        .build_remote()
         .await
         .unwrap();
 }
@@ -98,7 +98,7 @@ async fn test_build_rockspec(rockspec_path: PathBuf) {
 
     Build::new(&rockspec, &tree, &config, &Progress::Progress(bar))
         .behaviour(Force)
-        .build()
+        .build_remote()
         .await
         .unwrap();
 }
