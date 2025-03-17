@@ -13,6 +13,7 @@ use lux_lib::{
     progress::MultiProgress,
     project::Project,
     rockspec::Rockspec,
+    tree,
 };
 
 #[derive(Args, Default)]
@@ -61,6 +62,7 @@ pub async fn build(data: Build, config: Config) -> Result<()> {
                     BuildBehaviour::default(),
                     *dep.pin(),
                     *dep.opt(),
+                    tree::EntryType::Entrypoint,
                 )
             });
 
@@ -77,7 +79,15 @@ pub async fn build(data: Build, config: Config) -> Result<()> {
                 tree.match_rocks(dep.package_req())
                     .is_ok_and(|rock_match| !rock_match.is_found())
             })
-            .map(PackageInstallSpec::from)
+            .map(|dep| {
+                PackageInstallSpec::new(
+                    dep.clone().into_package_req(),
+                    BuildBehaviour::default(),
+                    *dep.pin(),
+                    *dep.opt(),
+                    tree::EntryType::Entrypoint,
+                )
+            })
             .collect_vec();
 
         if !build_dependencies_to_install.is_empty() {
@@ -118,10 +128,16 @@ Use --ignore-lockfile to force a new build.
             )?;
     }
 
-    build::Build::new(&rocks, &tree, &config, &progress.map(|p| p.new_bar()))
-        .behaviour(BuildBehaviour::Force)
-        .build()
-        .await?;
+    build::Build::new(
+        &rocks,
+        &tree,
+        tree::EntryType::Entrypoint,
+        &config,
+        &progress.map(|p| p.new_bar()),
+    )
+    .behaviour(BuildBehaviour::Force)
+    .build()
+    .await?;
 
     Ok(())
 }

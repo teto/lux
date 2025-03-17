@@ -22,6 +22,7 @@ use crate::{
     progress::{Progress, ProgressBar},
     remote_package_source::RemotePackageSource,
     rockspec::Rockspec,
+    tree,
 };
 use crate::{lockfile::RemotePackageSourceUrl, rockspec::LuaVersionCompatibility};
 
@@ -49,6 +50,7 @@ pub(crate) struct BinaryRockInstall<'a> {
     source: RemotePackageSource,
     pin: PinnedState,
     opt: OptState,
+    entry_type: tree::EntryType,
     constraint: LockConstraint,
     behaviour: BuildBehaviour,
     config: &'a Config,
@@ -60,6 +62,7 @@ impl<'a> BinaryRockInstall<'a> {
         rockspec: &'a RemoteLuaRockspec,
         source: RemotePackageSource,
         rock_bytes: Bytes,
+        entry_type: tree::EntryType,
         config: &'a Config,
         progress: &'a Progress<ProgressBar>,
     ) -> Self {
@@ -73,6 +76,7 @@ impl<'a> BinaryRockInstall<'a> {
             behaviour: BuildBehaviour::default(),
             pin: PinnedState::default(),
             opt: OptState::default(),
+            entry_type,
         }
     }
 
@@ -141,7 +145,10 @@ impl<'a> BinaryRockInstall<'a> {
                     return Err(InstallBinaryRockError::RockManifestNotFound);
                 }
                 let rock_manifest_content = std::fs::read_to_string(rock_manifest_file)?;
-                let output_paths = tree.rock(&package)?;
+                let output_paths = match self.entry_type {
+                    tree::EntryType::Entrypoint => tree.entrypoint(&package)?,
+                    tree::EntryType::DependencyOnly => tree.dependency(&package)?,
+                };
                 let rock_manifest = RockManifest::new(&rock_manifest_content)?;
                 install_manifest_entries(
                     &rock_manifest.lib.entries,
@@ -206,7 +213,6 @@ mod test {
         config::{ConfigBuilder, LuaVersion},
         operations::{unpack_rockspec, DownloadedPackedRockBytes, Pack, Remove},
         progress::MultiProgress,
-        tree::Tree,
     };
 
     use super::*;
@@ -257,19 +263,16 @@ mod test {
             &rockspec,
             RemotePackageSource::Test,
             rock.bytes,
+            tree::EntryType::Entrypoint,
             &config,
             &Progress::Progress(bar),
         )
         .install()
         .await
         .unwrap();
-        let tree = Tree::new(
-            install_root.to_path_buf(),
-            LuaVersion::from(&config).unwrap(),
-        )
-        .unwrap();
-        let installed_rock_layout = tree.rock_layout(&local_package);
-        let orig_install_tree_integrity = installed_rock_layout.rock_path.hash().unwrap();
+        let tree = config.tree(LuaVersion::from(&config).unwrap()).unwrap();
+        let rock_layout = tree.entrypoint_layout(&local_package);
+        let orig_install_tree_integrity = rock_layout.rock_path.hash().unwrap();
 
         let pack_dest_dir = assert_fs::TempDir::new().unwrap();
         let packed_rock = Pack::new(
@@ -317,15 +320,16 @@ mod test {
             &rockspec,
             RemotePackageSource::Test,
             rock.bytes,
+            tree::EntryType::Entrypoint,
             &config,
             &Progress::Progress(bar),
         )
         .install()
         .await
         .unwrap();
-        let installed_rock_layout = tree.rock_layout(&local_package);
-        assert!(installed_rock_layout.rockspec_path().is_file());
-        let new_install_tree_integrity = installed_rock_layout.rock_path.hash().unwrap();
+        let rock_layout = tree.entrypoint_layout(&local_package);
+        assert!(rock_layout.rockspec_path().is_file());
+        let new_install_tree_integrity = rock_layout.rock_path.hash().unwrap();
         assert_eq!(orig_install_tree_integrity, new_install_tree_integrity);
     }
 }

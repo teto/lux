@@ -11,9 +11,9 @@ use tempdir::TempDir;
 use thiserror::Error;
 
 use crate::{
-    build::{Build, BuildError},
+    build::{Build, BuildBehaviour, BuildError},
     config::{Config, LuaVersion, LuaVersionUnset},
-    lockfile::{LocalPackage, LocalPackageId},
+    lockfile::{LocalPackage, LocalPackageId, OptState, PinnedState},
     lua_installation::LuaInstallation,
     lua_rockspec::{RemoteLuaRockspec, RockspecFormat},
     operations::{get_all_dependencies, PackageInstallSpec, SearchAndDownloadError},
@@ -22,7 +22,7 @@ use crate::{
     progress::{MultiProgress, Progress, ProgressBar},
     remote_package_db::{RemotePackageDB, RemotePackageDBError},
     rockspec::Rockspec,
-    tree::Tree,
+    tree::{self, Tree},
 };
 
 #[derive(Error, Debug)]
@@ -90,7 +90,7 @@ impl LuaRocksInstallation {
     pub fn new(config: &Config) -> Result<Self, LuaRocksError> {
         let config = config.clone().with_tree(config.luarocks_tree().clone());
         let luarocks_installation = Self {
-            tree: Tree::new(config.luarocks_tree().clone(), LuaVersion::from(&config)?)?,
+            tree: config.tree(LuaVersion::from(&config)?)?,
             config,
         };
         Ok(luarocks_installation)
@@ -115,11 +115,17 @@ impl LuaRocksInstallation {
 
         if !self.tree.match_rocks(&luarocks_req)?.is_found() {
             let rockspec = RemoteLuaRockspec::new(LUAROCKS_ROCKSPEC).unwrap();
-            let pkg = Build::new(&rockspec, &self.tree, &self.config, progress)
-                .constraint(luarocks_req.version_req().clone().into())
-                .build()
-                .await?;
-            lockfile.add(&pkg);
+            let pkg = Build::new(
+                &rockspec,
+                &self.tree,
+                tree::EntryType::Entrypoint,
+                &self.config,
+                progress,
+            )
+            .constraint(luarocks_req.version_req().clone().into())
+            .build()
+            .await?;
+            lockfile.add_entrypoint(&pkg);
         }
 
         Ok(())
@@ -151,7 +157,15 @@ impl LuaRocksInstallation {
             _ => rocks.build_dependencies().current_platform().to_vec(),
         }
         .into_iter()
-        .map(PackageInstallSpec::from)
+        .map(|dep| {
+            PackageInstallSpec::new(
+                dep.package_req,
+                BuildBehaviour::default(),
+                PinnedState::default(),
+                OptState::default(),
+                tree::EntryType::Entrypoint,
+            )
+        })
         .collect_vec();
 
         let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
@@ -181,7 +195,7 @@ impl LuaRocksInstallation {
             let tree = self.tree.clone();
             tokio::spawn(async move {
                 let rockspec = install_spec.downloaded_rock.rockspec();
-                let pkg = Build::new(rockspec, &tree, &config, &bar)
+                let pkg = Build::new(rockspec, &tree, tree::EntryType::Entrypoint, &config, &bar)
                     .constraint(install_spec.spec.constraint())
                     .behaviour(install_spec.build_behaviour)
                     .build()
@@ -189,31 +203,36 @@ impl LuaRocksInstallation {
 
                 bar.map(|b| b.finish_and_clear());
 
-                Ok::<_, InstallBuildDependenciesError>((pkg.id(), pkg))
+                Ok::<_, InstallBuildDependenciesError>((pkg.id(), (pkg, install_spec.entry_type)))
             })
         }))
         .await
         .into_iter()
         .flatten()
-        .try_collect::<_, HashMap<LocalPackageId, LocalPackage>, _>()?;
+        .try_collect::<_, HashMap<LocalPackageId, (LocalPackage, tree::EntryType)>, _>()?;
 
-        installed_packages.iter().for_each(|(id, pkg)| {
-            lockfile.add(pkg);
+        installed_packages
+            .iter()
+            .for_each(|(id, (pkg, entry_type))| {
+                if *entry_type == tree::EntryType::Entrypoint {
+                    lockfile.add_entrypoint(pkg);
+                }
 
-            all_packages
-                .get(id)
-                .map(|pkg| pkg.spec.dependencies())
-                .unwrap_or_default()
-                .into_iter()
-                .for_each(|dependency_id| {
-                    lockfile.add_dependency(
-                        pkg,
-                        installed_packages
-                            .get(dependency_id)
-                            .expect("required dependency not found"),
-                    );
-                });
-        });
+                all_packages
+                    .get(id)
+                    .map(|pkg| pkg.spec.dependencies())
+                    .unwrap_or_default()
+                    .into_iter()
+                    .for_each(|dependency_id| {
+                        lockfile.add_dependency(
+                            pkg,
+                            &installed_packages
+                                .get(dependency_id)
+                                .expect("required dependency not found")
+                                .0,
+                        );
+                    });
+            });
 
         Ok(())
     }

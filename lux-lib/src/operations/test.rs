@@ -3,12 +3,13 @@ use std::{io, ops::Deref, process::Command, sync::Arc};
 use crate::{
     build::BuildBehaviour,
     config::Config,
+    lockfile::{OptState, PinnedState},
     package::{PackageName, PackageReq, PackageVersionReqError},
     path::Paths,
     progress::{MultiProgress, Progress},
     project::{project_toml::LocalProjectTomlValidationError, Project, ProjectTreeError},
     rockspec::Rockspec,
-    tree::Tree,
+    tree::{self, Tree},
 };
 use bon::Builder;
 use itertools::Itertools;
@@ -189,8 +190,15 @@ pub async fn ensure_busted(
     let busted_req = PackageReq::new("busted".into(), None)?;
 
     if !tree.match_rocks(&busted_req)?.is_found() {
+        let install_spec = PackageInstallSpec::new(
+            busted_req,
+            BuildBehaviour::default(),
+            PinnedState::default(),
+            OptState::default(),
+            tree::EntryType::Entrypoint,
+        );
         Install::new(tree, config)
-            .package(busted_req.into())
+            .package(install_spec)
             .progress(progress)
             .install()
             .await?;
@@ -229,6 +237,7 @@ async fn ensure_dependencies(
                     build_behaviour,
                     *dep.pin(),
                     *dep.opt(),
+                    tree::EntryType::Entrypoint,
                 )
             })
         });
@@ -259,6 +268,7 @@ async fn ensure_dependencies(
                     build_behaviour,
                     *dep.pin(),
                     *dep.opt(),
+                    tree::EntryType::Entrypoint,
                 )
             })
         });

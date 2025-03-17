@@ -11,7 +11,7 @@ use crate::{
     package::{PackageName, PackageReq},
     progress::{MultiProgress, Progress},
     rockspec::lua_dependency::LuaDependencySpec,
-    tree::Tree,
+    tree::{self, Tree},
 };
 use bon::{builder, Builder};
 use itertools::Itertools;
@@ -133,13 +133,23 @@ async fn do_sync(
         .iter()
         .for_each(|pkg| args.project_lockfile.remove(pkg, lock_type));
 
+    let mut to_add: Vec<(tree::EntryType, LocalPackage)> = Vec::new();
+
     let mut report = SyncReport {
         added: Vec::new(),
         removed: Vec::new(),
     };
     for (id, local_package) in args.project_lockfile.rocks(lock_type) {
         if dest_lockfile.get(id).is_none() {
-            report.added.push(local_package.clone());
+            let entry_type = if args
+                .project_lockfile
+                .is_entrypoint(&local_package.id(), lock_type)
+            {
+                tree::EntryType::Entrypoint
+            } else {
+                tree::EntryType::DependencyOnly
+            };
+            to_add.push((entry_type, local_package.clone()));
         }
     }
     for (id, local_package) in dest_lockfile.rocks() {
@@ -148,19 +158,22 @@ async fn do_sync(
         }
     }
 
-    let packages_to_install = report
-        .added
+    let packages_to_install = to_add
         .iter()
         .cloned()
-        .map(|pkg| {
+        .map(|(entry_type, pkg)| {
             PackageInstallSpec::new(
                 pkg.clone().into_package_req(),
                 BuildBehaviour::Force,
                 pkg.pinned(),
                 pkg.opt(),
+                entry_type,
             )
         })
         .collect_vec();
+    report
+        .added
+        .extend(to_add.iter().map(|(_, pkg)| pkg).cloned());
 
     let package_db = args
         .project_lockfile
@@ -178,7 +191,7 @@ async fn do_sync(
     let dest_lockfile = args.tree.lockfile()?;
 
     if args.validate_integrity.unwrap_or(true) {
-        for package in &report.added {
+        for (_, package) in &to_add {
             dest_lockfile
                 .validate_integrity(package)
                 .map_err(|err| SyncError::Integrity(package.name().clone(), err))?;
@@ -211,6 +224,7 @@ async fn do_sync(
                 BuildBehaviour::Force,
                 *pkg.pin(),
                 *pkg.opt(),
+                tree::EntryType::Entrypoint,
             )
         });
 

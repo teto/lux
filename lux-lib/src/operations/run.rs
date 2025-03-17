@@ -1,19 +1,22 @@
 use std::{io, process::Command};
 
 use crate::{
+    build::BuildBehaviour,
     config::{Config, LuaVersion, LuaVersionUnset},
+    lockfile::{OptState, PinnedState},
     lua_rockspec::LuaVersionError,
     operations::Install,
     package::{PackageReq, PackageVersionReqError},
     path::Paths,
     project::{Project, ProjectTreeError},
     remote_package_db::RemotePackageDBError,
+    tree,
 };
 use bon::Builder;
 use itertools::Itertools;
 use thiserror::Error;
 
-use super::InstallError;
+use super::{InstallError, PackageInstallSpec};
 
 /// Rocks package runner, providing fine-grained control
 /// over how a package should be run.
@@ -111,9 +114,15 @@ pub enum InstallCmdError {
 /// Ensure that a command is installed.
 /// This defaults to the local project tree if cwd is a project root.
 pub async fn install_command(command: &str, config: &Config) -> Result<(), InstallCmdError> {
-    let package_req = PackageReq::new(command.into(), None)?;
+    let install_spec = PackageInstallSpec::new(
+        PackageReq::new(command.into(), None)?,
+        BuildBehaviour::default(),
+        PinnedState::default(),
+        OptState::default(),
+        tree::EntryType::Entrypoint,
+    );
     Install::new(&config.tree(LuaVersion::from(config)?)?, config)
-        .package(package_req.into())
+        .package(install_spec)
         .install()
         .await?;
     Ok(())

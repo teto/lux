@@ -1,6 +1,7 @@
 use crate::lockfile::{OptState, RemotePackageSourceUrl};
 use crate::lua_rockspec::LuaVersionError;
 use crate::rockspec::{LuaVersionCompatibility, Rockspec};
+use crate::tree;
 use std::{io, path::Path, process::ExitStatus};
 
 use crate::{
@@ -54,6 +55,8 @@ pub struct Build<'a, R: Rockspec + HasIntegrity> {
     rockspec: &'a R,
     #[builder(start_fn)]
     tree: &'a Tree,
+    #[builder(start_fn)]
+    entry_type: tree::EntryType,
     #[builder(start_fn)]
     config: &'a Config,
 
@@ -329,7 +332,10 @@ async fn do_build<R: Rockspec + HasIntegrity>(
     match tree.lockfile()?.get(&package.id()) {
         Some(package) if build.behaviour == BuildBehaviour::NoForce => Ok(package.clone()),
         _ => {
-            let output_paths = tree.rock(&package)?;
+            let output_paths = match build.entry_type {
+                tree::EntryType::Entrypoint => tree.entrypoint(&package)?,
+                tree::EntryType::DependencyOnly => tree.dependency(&package)?,
+            };
 
             let lua = LuaInstallation::new(&lua_version, build.config);
 
@@ -391,10 +397,7 @@ async fn do_build<R: Rockspec + HasIntegrity>(
                         .is_some_and(|name| name != "doc" && name != "docs")
                 })
             {
-                recursive_copy_dir(
-                    &build_dir.join(directory),
-                    &output_paths.etc.join(directory),
-                )?;
+                recursive_copy_dir(&build_dir.join(directory), &output_paths.etc)?;
             }
 
             recursive_copy_doc_dir(&output_paths, &build_dir)?;

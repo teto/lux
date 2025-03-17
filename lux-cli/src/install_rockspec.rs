@@ -14,6 +14,7 @@ use lux_lib::{
     progress::MultiProgress,
     project::Project,
     rockspec::{LuaVersionCompatibility, Rockspec},
+    tree,
 };
 
 #[derive(Args, Default)]
@@ -66,6 +67,7 @@ pub async fn install_rockspec(data: InstallRockspec, config: Config) -> Result<(
                 BuildBehaviour::NoForce,
                 pin,
                 OptState::Required,
+                tree::EntryType::DependencyOnly,
             )
         });
 
@@ -80,11 +82,17 @@ pub async fn install_rockspec(data: InstallRockspec, config: Config) -> Result<(
             .wrap_err("error creating project lockfile.")?;
     }
 
-    build::Build::new(&rockspec, &tree, &config, &progress.map(|p| p.new_bar()))
-        .pin(pin)
-        .behaviour(BuildBehaviour::Force)
-        .build()
-        .await?;
+    build::Build::new(
+        &rockspec,
+        &tree,
+        tree::EntryType::Entrypoint,
+        &config,
+        &progress.map(|p| p.new_bar()),
+    )
+    .pin(pin)
+    .behaviour(BuildBehaviour::Force)
+    .build()
+    .await?;
 
     Ok(())
 }
