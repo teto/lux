@@ -51,7 +51,7 @@ The following table provides a brief (incomplete) comparison:
 | proper lockfile support with integrity checks                         | :white_check_mark:           | :x: (basic, dependency versions only) |
 | auto-detect external dependencies and Lua headers with `pkg-config`   | :white_check_mark:           | :x:                |
 | automatic lua detection/installation                                  | :white_check_mark:           | :x:                |
-| resolve multiple versions of the same dependency at runtime           | :x: (planned)                | :white_check_mark: |
+| resolve multiple versions of the same dependency at runtime           | :white_check_mark:           | :white_check_mark: |
 | run tests with busted                                                 | :white_check_mark:           | :white_check_mark: |
 | code formatting with stylua                                           | :white_check_mark:           | :x:                |
 | linting with luacheck                                                 | :white_check_mark:           | :x:                |
