@@ -20,6 +20,4 @@ body = """
 
 [[package]]
 name = "lux-workspace-hack"
-changelog_update = false
-git_release_enable = false
-publish = false
+release = false
