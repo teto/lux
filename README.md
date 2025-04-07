@@ -3,14 +3,14 @@
   <a href="https://nvim-neorocks.github.io/tutorial/getting-started"><img src="./lux-logo.svg" alt="Lux" width="200"></a>
   <br>
   <br>
-  Lux
+  <span>Lux</span>
 </h1>
 
 <h4 align="center">A luxurious package manager for <a href="https://www.lua.org/" target="_blank">Lua</a>.</h4>
 
 <p align="center">
   <img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/nvim-neorocks/lux/integration-tests.yml?style=for-the-badge">
-  <img alt="GitHub top language" src="https://img.shields.io/github/languages/top/nvim-neorocks/lux?style=for-the-badge">
+  <img alt="GitHub Top Language" src="https://img.shields.io/github/languages/top/nvim-neorocks/lux?style=for-the-badge">
   <img alt="GitHub License" src="https://img.shields.io/github/license/nvim-neorocks/lux?style=for-the-badge">
 </p>
 
