@@ -4,8 +4,6 @@ All notable changes to this project will be documented in this file.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-
 ## `lux-cli` - [0.3.6](https://github.com/nvim-neorocks/lux/compare/v0.3.5...v0.3.6) - 2025-04-14
 
 ### Other
