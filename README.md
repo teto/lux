@@ -91,6 +91,7 @@ The following table provides a brief comparison:
 | versioning                                                            | SemVer[^3]                   | arbitrary          |
 | rockspecs with CVS/Mercurial/SVN/SSCM sources                         | :x: (YAGNI[^2])              | :white_check_mark: |
 | static type checking                                                  | :x: (planned)                | :x:                |
+| git dependencies in local projects                                    | :white_check_mark:           | :x:                |
 
 [^1]: Supported via a compatibility layer that uses luarocks as a backend.
 [^2]: [You Aren't Gonna Need It.](https://martinfowler.com/bliki/Yagni.html)
