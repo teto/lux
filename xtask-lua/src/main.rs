@@ -1,5 +1,5 @@
 use std::{
-    env,
+    env::{self, consts::DLL_EXTENSION},
     fs::{self},
     path::{Path, PathBuf},
     process::Command,
@@ -87,7 +87,7 @@ fn dist(release: bool) -> Result<(), DynError> {
     fs::create_dir_all(dir.join(canonical_lua_version))?;
 
     fs::copy(
-        project_root().join(format!("target/{profile}/liblux_lua.so")),
+        project_root().join(format!("target/{profile}/liblux_lua.{DLL_EXTENSION}")),
         dir.join(format!("{canonical_lua_version}/lux.so")),
     )?;
 
