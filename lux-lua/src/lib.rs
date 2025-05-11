@@ -13,6 +13,7 @@ fn lux(lua: &Lua) -> LuaResult<LuaTable> {
         feature = "lua52",
         feature = "lua53",
         feature = "lua54",
+        feature = "luajit",
         feature = "test"
     )))]
     compile_error!(
