@@ -10,6 +10,7 @@ use thiserror::Error;
 use tree::RockLayoutConfig;
 use url::Url;
 
+use crate::operations::LuaBinary;
 use crate::tree::{Tree, TreeError};
 use crate::{
     build::{utils, variables::HasVariables},
@@ -103,30 +104,13 @@ impl LuaVersion {
     }
 }
 
-pub trait DefaultFromConfig {
-    type Err: std::error::Error;
-
-    fn or_default_from(self, config: &Config) -> Result<LuaVersion, Self::Err>;
-}
-
-impl DefaultFromConfig for Option<LuaVersion> {
-    type Err = LuaVersionUnset;
-
-    fn or_default_from(self, config: &Config) -> Result<LuaVersion, Self::Err> {
-        match self {
-            Some(value) => Ok(value),
-            None => LuaVersion::from(config),
-        }
-    }
-}
-
 #[derive(Error, Debug)]
 #[error("lua version not set! Please provide a version through `lx --lua-version <ver> <cmd>`\nValid versions are: '5.1', '5.2', '5.3', '5.4', 'jit' and 'jit52'.")]
 pub struct LuaVersionUnset;
 
 impl LuaVersion {
-    pub fn from(config: &Config) -> Result<Self, LuaVersionUnset> {
-        config.lua_version().ok_or(LuaVersionUnset).cloned()
+    pub fn from(config: &Config) -> Result<&Self, LuaVersionUnset> {
+        config.lua_version.as_ref().ok_or(LuaVersionUnset)
     }
 }
 
@@ -249,7 +233,8 @@ impl Config {
         self.lua_dir.as_ref()
     }
 
-    pub fn lua_version(&self) -> Option<&LuaVersion> {
+    #[cfg(test)]
+    pub(crate) fn lua_version(&self) -> Option<&LuaVersion> {
         self.lua_version.as_ref()
     }
 
@@ -458,11 +443,13 @@ impl ConfigBuilder {
         let cache_dir = self.cache_dir.unwrap_or(Config::get_default_cache_path()?);
         let user_tree = self.user_tree.unwrap_or(data_dir.join("tree"));
 
-        let lua_version = self
-            .lua_version
-            .or(crate::lua_installation::get_installed_lua_version("lua")
-                .ok()
-                .and_then(|version| LuaVersion::from_version(version).ok()));
+        let lua_version =
+            self.lua_version
+                .or(
+                    crate::lua_installation::detect_installed_lua_version(LuaBinary::default())
+                        .ok()
+                        .and_then(|version| LuaVersion::from_version(version).ok()),
+                );
         Ok(Config {
             enable_development_packages: self.enable_development_packages.unwrap_or(false),
             server: self
@@ -603,7 +590,6 @@ impl UserData for Config {
         });
         methods.add_method("namespace", |_, this, ()| Ok(this.namespace().cloned()));
         methods.add_method("lua_dir", |_, this, ()| Ok(this.lua_dir().cloned()));
-        methods.add_method("lua_version", |_, this, ()| Ok(this.lua_version().cloned()));
         methods.add_method("user_tree", |_, this, lua_version: LuaVersion| {
             this.user_tree(lua_version).into_lua_err()
         });
