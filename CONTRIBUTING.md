@@ -67,9 +67,26 @@ pre-commit run --all
 Optionally, you can use [`direnv`](https://direnv.net/) to auto-load
 the development shell. Just run `direnv allow`.
 
-### Running tests
+### Testing
 
-## Running tests without nix
+We value proof of functionality in the form of automated tests.
+For that, we rely on
+
+- Unit/property tests, in a `tests` submodule of the respective modules to be tested.
+- Integration tests: Modules in a `tests` directory.
+
+We recommend [test driven development](https://martinfowler.com/bliki/TestDrivenDevelopment.html),
+but that is up to you.
+
+> [!NOTE]
+>
+> Impure unit tests that require a network connection cannot be built with Nix.
+> So we try to avoid them if possible (this is not the case for integration tests,
+> which we don't run with Nix).
+> If a unit test absolutely needs a network connection, please make sure to skip
+> it if the `LUX_SKIP_IMPURE_TESTS` environment variable is set to 1.
+
+#### Running tests without nix
 
 For reproducibility, we only run tests that can be sandboxed with `nix`,
 skipping integration tests and impure tests that need a network connection.
@@ -82,7 +99,7 @@ Or, if you are using [cargo-nextest](https://nexte.st/), we provide an alias:
 cargo tt
 ```
 
-### Running tests and checks with Nix
+#### Running tests and checks with Nix
 
 If you just want to run all checks that are available, run:
 
@@ -108,7 +125,7 @@ For formatting and linting:
 nix build .#checks.<your-system>.git-hooks-check -Lv
 ```
 
-### Testing Lux manually
+#### Testing Lux manually
 
 For convenience, we provide a `cargo lx` alias,
 which will build Lux in debug mode and invoke its CLI with any arguments
@@ -119,3 +136,7 @@ Example:
 ```conseole
 cargo lx --help
 ```
+
+> [!NOTE]
+>
+> If your contribution was tested manually, we will likely ask you to write some tests :)
