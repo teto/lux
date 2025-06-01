@@ -107,16 +107,10 @@ impl TryFrom<String> for RemotePackageSource {
             if let Some(str) = value.get(pos + 1..) {
                 let remote_source_type = value[..pos].into();
                 match remote_source_type {
-                    "luarocks_rockspec" => {
-                        Ok(RemotePackageSource::LuarocksRockspec(Url::parse(str)?))
-                    }
-                    "luarocks_src_rock" => {
-                        Ok(RemotePackageSource::LuarocksSrcRock(Url::parse(str)?))
-                    }
-                    "luarocks_rock" => {
-                        Ok(RemotePackageSource::LuarocksBinaryRock(Url::parse(str)?))
-                    }
-                    "rockspec" => Ok(RemotePackageSource::RockspecContent(str.into())),
+                    "luarocks_rockspec" => Ok(Self::LuarocksRockspec(Url::parse(str)?)),
+                    "luarocks_src_rock" => Ok(Self::LuarocksSrcRock(Url::parse(str)?)),
+                    "luarocks_rock" => Ok(Self::LuarocksBinaryRock(Url::parse(str)?)),
+                    "rockspec" => Ok(Self::RockspecContent(str.into())),
                     _ => Err(RemotePackageSourceError::UnknownRemoteSourceType(
                         remote_source_type.into(),
                     )),
@@ -124,6 +118,8 @@ impl TryFrom<String> for RemotePackageSource {
             } else {
                 Err(RemotePackageSourceError::MissingUrl(value))
             }
+        } else if value == "local" {
+            Ok(Self::Local)
         } else {
             Err(RemotePackageSourceError::MissingSeparator(value))
         }
