@@ -10,7 +10,6 @@ use thiserror::Error;
 use tree::RockLayoutConfig;
 use url::Url;
 
-use crate::operations::LuaBinary;
 use crate::tree::{Tree, TreeError};
 use crate::{
     build::utils,
@@ -102,6 +101,10 @@ impl LuaVersion {
         } else {
             Err(LuaVersionError::UnsupportedLuaVersion(version))
         }
+    }
+
+    pub(crate) fn is_luajit(&self) -> bool {
+        matches!(self, Self::LuaJIT | Self::LuaJIT52)
     }
 }
 
@@ -444,13 +447,10 @@ impl ConfigBuilder {
         let cache_dir = self.cache_dir.unwrap_or(Config::get_default_cache_path()?);
         let user_tree = self.user_tree.unwrap_or(data_dir.join("tree"));
 
-        let lua_version =
-            self.lua_version
-                .or(crate::lua_installation::detect_installed_lua_version_sync(
-                    LuaBinary::default(),
-                )
-                .ok()
-                .and_then(|version| LuaVersion::from_version(version).ok()));
+        let lua_version = self
+            .lua_version
+            .or(crate::lua_installation::detect_installed_lua_version());
+
         Ok(Config {
             enable_development_packages: self.enable_development_packages.unwrap_or(false),
             server: self
