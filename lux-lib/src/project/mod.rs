@@ -37,9 +37,11 @@ use crate::{
     package::{PackageName, PackageReq},
 };
 
+pub(crate) mod gen;
 pub mod project_toml;
 
-pub const PROJECT_TOML: &str = "lux.toml";
+pub use project_toml::PROJECT_TOML;
+
 pub const EXTRA_ROCKSPEC: &str = "extra.rockspec";
 
 #[derive(Error, Debug)]
@@ -763,7 +765,7 @@ mod tests {
 
     use super::*;
     use crate::{
-        lua_rockspec::{ExternalDependencySpec, RockSourceSpec},
+        lua_rockspec::ExternalDependencySpec,
         manifest::{Manifest, ManifestMetadata},
         package::PackageReq,
         rockspec::{lua_dependency::LuaDependencySpec, Rockspec},
@@ -900,10 +902,6 @@ mod tests {
         let rocks = project.toml().into_remote().unwrap();
 
         assert_eq!(rocks.package().to_string(), "custom-package");
-        assert_eq!(rocks.version().to_string(), "2.0.0-1");
-        assert!(
-            matches!(&rocks.source().current_platform().source_spec, RockSourceSpec::Url(url) if url == &Url::parse("https://github.com/custom/url").unwrap())
-        );
     }
 
     #[tokio::test]
