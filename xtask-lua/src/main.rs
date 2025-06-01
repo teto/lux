@@ -92,12 +92,12 @@ fn dist(release: bool) -> Result<(), DynError> {
     )?;
 
     let version = {
-        let manifest_path = project_root().join("lux-lua/Cargo.toml");
+        let manifest_path = project_root().join("Cargo.toml");
         let manifest = fs::read_to_string(manifest_path)?;
         let package: toml::Value = toml::from_str(&manifest)?;
-        package["package"]["version"]
+        package["workspace"]["package"]["version"]
             .as_str()
-            .ok_or("Failed to get version")?
+            .ok_or("lux-lua: Failed to get version from Cargo.toml")?
             .to_string()
     };
 
