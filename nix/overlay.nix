@@ -7,7 +7,9 @@
 
   cleanCargoSrc = craneLib.cleanCargoSource self;
 
-  luxCliCargo = craneLib.crateNameFromCargoToml {src = "${self}/lux-cli";};
+  luxCargo = craneLib.crateNameFromCargoToml {
+    src = self;
+  };
 
   commonArgs = with final; {
     strictDeps = true;
@@ -69,14 +71,12 @@
       if isLuaJIT
       then "luajit"
       else "lua${lib.concatStringsSep "" luaMajorMinor}";
-
-    luxLuaCargo = craneLib.crateNameFromCargoToml {src = "${self}/lux-lua";};
   in
     craneLib.buildPackage (individualCrateArgs
       // {
         pname = "lux-lua";
-        inherit (luxLuaCargo) version;
-        cargoExtraArgs = "-p ${luxLuaCargo.pname} --no-default-features --features ${luaFeature}";
+        inherit (luxCargo) version;
+        cargoExtraArgs = "-p lux-lua --no-default-features --features ${luaFeature}";
 
         buildInputs = individualCrateArgs.buildInputs ++ [luaPkg];
 
@@ -105,12 +105,13 @@
   mk-lux-cli = {buildType ? "release"}:
     craneLib.buildPackage (individualCrateArgs
       // {
-        inherit (luxCliCargo) pname version;
+        pname = "lux-cli";
+        inherit (luxCargo) version;
         inherit buildType;
 
         buildInputs = individualCrateArgs.buildInputs ++ [final.lua5_4];
 
-        cargoExtraArgs = "-p ${luxCliCargo.pname}";
+        cargoExtraArgs = "-p lux-cli";
 
         postBuild = ''
           cargo xtask dist-man
@@ -168,7 +169,8 @@ in {
 
   lux-nextest = craneLib.cargoNextest (commonArgs
     // {
-      inherit (luxCliCargo) pname version;
+      pname = "lux-tests";
+      inherit (luxCargo) version;
       src = self;
 
       buildInputs = commonArgs.buildInputs ++ [final.lua5_4];
@@ -231,7 +233,8 @@ in {
 
   lux-clippy = craneLib.cargoClippy (commonArgs
     // {
-      inherit (luxCliCargo) pname version;
+      pname = "lux-clippy";
+      inherit (luxCargo) version;
       src = cleanCargoSrc;
       buildInputs = commonArgs.buildInputs ++ [final.lua5_4];
       cargoArtifacts = lux-deps;
