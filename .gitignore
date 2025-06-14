@@ -24,6 +24,6 @@
 /lux.lock
 /lux.toml
 spec/
-.busted
+/.busted
 
 .pre-commit-config.yaml
