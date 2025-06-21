@@ -2,10 +2,12 @@
 name: "Nix build"
 on:
   pull_request:
+    types: [opened, ready_for_review, reopened, synchronize]
   push:
     branches: [ master ]
 jobs:
   build:
+    if: github.event.pull_request.draft == false
     name: ${{ matrix.job.target }}
     runs-on: ${{ matrix.job.os }}
     permissions:

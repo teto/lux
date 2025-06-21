@@ -1,5 +1,6 @@
 on: 
   pull_request:
+    types: [opened, ready_for_review, reopened, synchronize]
   push:
     branches:
       - master
@@ -8,6 +9,7 @@ name: Integration tests (Linux/MacOS)
 
 jobs:
   test:
+    if: github.event.pull_request.draft == false
     strategy:
       matrix:
         os: ["ubuntu-24.04", "macos-14"]
