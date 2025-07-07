@@ -65,6 +65,7 @@
                   cargo-nextest
                   cargo-hakari
                   cargo-insta
+                  cargo-cross
                   clippy
                   taplo
                   lua_pkg
