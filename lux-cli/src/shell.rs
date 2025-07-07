@@ -1,12 +1,10 @@
 use clap::Args;
 use eyre::{eyre, Result, WrapErr};
-use lux_lib::{config::Config, path::PackagePath, path::Paths};
+use lux_lib::{config::Config, path::Paths};
 use which::which;
 
 use std::{env, path::PathBuf};
 use tokio::process::Command;
-
-use std::str::FromStr;
 
 use super::utils::project::current_project_or_user_tree;
 
@@ -64,13 +62,8 @@ pub async fn shell(data: Shell, config: Config) -> Result<()> {
         path.prepend(&build_path);
     }
 
-    let mut lua_path = PackagePath::from_str(env::var("LUA_PATH").unwrap_or_default().as_str())
-        .unwrap_or_default();
-    lua_path.prepend(path.package_path());
-
-    let lua_cpath = PackagePath::from_str(env::var("LUA_CPATH").unwrap_or_default().as_str())
-        .unwrap_or_default();
-    lua_path.prepend(path.package_cpath());
+    let lua_path = path.package_path_prepended();
+    let lua_cpath = path.package_cpath_prepended();
 
     let lua_init = if data.no_loader {
         None

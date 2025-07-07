@@ -1,5 +1,3 @@
-use std::{env, str::FromStr as _};
-
 use clap::Subcommand;
 use eyre::Result;
 use lux_lib::{
@@ -105,12 +103,12 @@ To suppress this warning, set the `--no-loader` option.
                 }
             };
             let shell = args.shell;
-            let package_path = mk_package_path(&paths, prepend)?;
+            let package_path = mk_package_path(&paths, prepend);
             if !package_path.is_empty() {
                 result.push_str(format_export(&shell, "LUA_PATH", &package_path).as_str());
                 result.push('\n')
             }
-            let package_cpath = mk_package_cpath(&paths, prepend)?;
+            let package_cpath = mk_package_cpath(&paths, prepend);
             if !package_cpath.is_empty() {
                 result.push_str(format_export(&shell, "LUA_CPATH", &package_cpath).as_str());
                 result.push('\n')
@@ -128,33 +126,28 @@ To suppress this warning, set the `--no-loader` option.
             }
             println!("{}", &result);
         }
-        PathCmd::Lua => println!("{}", &mk_package_path(&paths, prepend)?),
-        PathCmd::C => println!("{}", &mk_package_cpath(&paths, prepend)?),
+        PathCmd::Lua => println!("{}", &mk_package_path(&paths, prepend)),
+        PathCmd::C => println!("{}", &mk_package_cpath(&paths, prepend)),
         PathCmd::Bin => println!("{}", &mk_bin_path(&paths, prepend)?),
         PathCmd::Init => println!("{}", paths.init()),
     }
     Ok(())
 }
 
-fn mk_package_path(paths: &Paths, prepend: bool) -> Result<PackagePath> {
-    let mut result = if prepend {
-        PackagePath::from_str(env::var("LUA_PATH").unwrap_or_default().as_str()).unwrap_or_default()
+fn mk_package_path(paths: &Paths, prepend: bool) -> PackagePath {
+    if prepend {
+        paths.package_path_prepended()
     } else {
-        PackagePath::default()
-    };
-    result.prepend(paths.package_path());
-    Ok(result)
+        paths.package_path().clone()
+    }
 }
 
-fn mk_package_cpath(paths: &Paths, prepend: bool) -> Result<PackagePath> {
-    let mut result = if prepend {
-        PackagePath::from_str(env::var("LUA_CPATH").unwrap_or_default().as_str())
-            .unwrap_or_default()
+fn mk_package_cpath(paths: &Paths, prepend: bool) -> PackagePath {
+    if prepend {
+        paths.package_cpath_prepended()
     } else {
-        PackagePath::default()
-    };
-    result.prepend(paths.package_cpath());
-    Ok(result)
+        paths.package_cpath().clone()
+    }
 }
 
 fn mk_bin_path(paths: &Paths, prepend: bool) -> Result<BinPath> {
