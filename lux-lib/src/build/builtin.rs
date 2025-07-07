@@ -71,7 +71,9 @@ impl BuildBackend for BuiltinBuildSpec {
                             &output_paths.lib,
                             lua,
                             external_dependencies,
-                        )?
+                            config,
+                        )
+                        .await?
                     } else {
                         progress.map(|p| {
                             p.set_message(format!(
@@ -98,7 +100,9 @@ impl BuildBackend for BuiltinBuildSpec {
                         &output_paths.lib,
                         lua,
                         external_dependencies,
-                    )?
+                        config,
+                    )
+                    .await?
                 }
                 ModuleSpec::ModulePaths(data) => {
                     progress.map(|p| p.set_message("Compiling C modules..."));
@@ -109,7 +113,9 @@ impl BuildBackend for BuiltinBuildSpec {
                         &output_paths.lib,
                         lua,
                         external_dependencies,
-                    )?
+                        config,
+                    )
+                    .await?
                 }
             }
         }
