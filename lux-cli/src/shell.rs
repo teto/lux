@@ -6,7 +6,6 @@ use which::which;
 use std::{env, path::PathBuf};
 use tokio::process::Command;
 
-use std::process::Stdio;
 use std::str::FromStr;
 
 use super::utils::project::current_project_or_user_tree;
@@ -29,7 +28,7 @@ pub struct Shell {
 }
 
 pub async fn shell(data: Shell, config: Config) -> Result<()> {
-    if env::var("LUX_SHELL").is_ok() {
+    if env::var("LUX_SHELL").is_ok_and(|lx_shell_var| lx_shell_var == "1") {
         return Err(eyre!("Already in a Lux shell."));
     }
 
@@ -77,9 +76,9 @@ pub async fn shell(data: Shell, config: Config) -> Result<()> {
         None
     } else if tree.version().lux_lib_dir().is_none() {
         eprintln!(
-            "⚠️ WARNING: lux-lua library not found. 
-    Cannot use the `lux.loader`. 
-    To suppress this warning, set the `--no-loader` option. 
+            "⚠️ WARNING: lux-lua library not found.
+    Cannot use the `lux.loader`.
+    To suppress this warning, set the `--no-loader` option.
                     "
         );
         None
@@ -92,10 +91,7 @@ pub async fn shell(data: Shell, config: Config) -> Result<()> {
         .env("LUA_PATH", lua_path.joined())
         .env("LUA_CPATH", lua_cpath.joined())
         .env("LUA_INIT", lua_init.unwrap_or_default())
-        .env("LUX_SHELL", "")
-        .stdin(Stdio::inherit())
-        .stdout(Stdio::inherit())
-        .stderr(Stdio::inherit())
+        .env("LUX_SHELL", "1")
         .spawn()?
         .wait()
         .await?;

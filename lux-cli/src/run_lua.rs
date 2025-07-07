@@ -25,15 +25,15 @@ pub struct RunLua {
     #[arg(long)]
     lua: Option<String>,
 
-    /// Add test dependencies to the `LUA_PATH` and `LUA_CPATH.
+    /// Add test dependencies to the environment.
     #[arg(long)]
     test: bool,
 
-    /// Add build dependencies to the `LUA_PATH` and `LUA_CPATH.
+    /// Add build dependencies to the environment.
     #[arg(long)]
     build: bool,
 
-    /// Do not add `require('lux').loader()` to `LUA_INIT`.
+    /// Disable the Lux loader.
     /// If a rock has conflicting transitive dependencies,
     /// disabling the Lux loader may result in the wrong modules being loaded.
     #[clap(default_value_t = false)]
