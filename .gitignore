@@ -26,5 +26,6 @@
 /lux.toml
 /spec/
 /.busted
+/*.rock
 
 .pre-commit-config.yaml
