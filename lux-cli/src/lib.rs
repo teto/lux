@@ -36,6 +36,7 @@ use which::Which;
 pub mod add;
 pub mod build;
 pub mod check;
+pub mod completion;
 pub mod config;
 pub mod debug;
 pub mod doc;
@@ -147,6 +148,15 @@ pub enum Commands {
     /// Interact with the lux configuration.
     #[command(subcommand, arg_required_else_help = true)]
     Config(ConfigCmd),
+    /// Generate autocompletion scripts for the shell.{n}
+    /// Example: `lx completion zsh > ~/.zsh/completions/_lx`
+    Completion {
+        /// The shell to generate the completion script for.{n}
+        /// If not set, Lux will try to detect the current shell.{n}
+        /// Possible values: "bash", "elvish", "fish", "powershell", "zsh"{n}
+        #[arg(value_enum, default_value = "bash")]
+        shell: clap_complete::Shell,
+    },
     /// Internal commands for debugging Lux itself.
     #[command(subcommand, arg_required_else_help = true)]
     Debug(Debug),
