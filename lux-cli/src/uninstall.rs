@@ -88,12 +88,12 @@ Cannot uninstall dependencies:
         .cloned()
         .partition(|pkg_id| lockfile.is_dependency(pkg_id));
 
-    operations::Remove::new(&config)
-        .packages(entrypoints)
-        .remove()
-        .await?;
-
-    if !dependencies.is_empty() {
+    if dependencies.is_empty() {
+        operations::Remove::new(&config)
+            .packages(entrypoints)
+            .remove()
+            .await?;
+    } else {
         let package_names = dependencies
             .iter()
             .map(|pkg_id| unsafe { lockfile.get_unchecked(pkg_id) }.name().to_string())
@@ -123,6 +123,11 @@ Reinstall?
             .prompt()
             .expect("Error prompting for reinstall")
         {
+            operations::Remove::new(&config)
+                .packages(entrypoints)
+                .remove()
+                .await?;
+
             let reinstall_specs = dependencies
                 .iter()
                 .map(|pkg_id| {
