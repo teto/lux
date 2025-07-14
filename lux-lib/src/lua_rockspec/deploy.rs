@@ -12,7 +12,6 @@ pub struct DeploySpec {
     /// Whether to wrap installed Lua bin scripts to be executed with
     /// the detected or configured Lua installation.
     /// Defaults to `true`.
-    /// This only affects lua bin scripts that are declared in the rockspec.
     #[serde(default = "default_wrap_bin_scripts")]
     pub wrap_bin_scripts: bool,
 }
