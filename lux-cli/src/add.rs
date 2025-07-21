@@ -114,7 +114,7 @@ mod test {
             println!("Skipping impure test");
             return;
         }
-        let sample_project: PathBuf = "resources/test/sample-project-init/".into();
+        let sample_project: PathBuf = "resources/test/sample-projects/init/".into();
         let project_root = TempDir::new().unwrap();
         project_root.copy_from(&sample_project, &["**"]).unwrap();
         let cwd = std::env::current_dir().unwrap();
@@ -157,7 +157,7 @@ mod test {
             println!("Skipping impure test");
             return;
         }
-        let sample_project: PathBuf = "resources/test/sample-project-init/".into();
+        let sample_project: PathBuf = "resources/test/sample-projects/init/".into();
         let project_root = TempDir::new().unwrap();
         project_root.copy_from(&sample_project, &["**"]).unwrap();
         let cwd = std::env::current_dir().unwrap();
@@ -200,7 +200,7 @@ mod test {
             println!("Skipping impure test");
             return;
         }
-        let sample_project: PathBuf = "resources/test/sample-project-init/".into();
+        let sample_project: PathBuf = "resources/test/sample-projects/init/".into();
         let project_root = TempDir::new().unwrap();
         project_root.copy_from(&sample_project, &["**"]).unwrap();
         let cwd = std::env::current_dir().unwrap();

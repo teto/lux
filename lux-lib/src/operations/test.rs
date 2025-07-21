@@ -288,14 +288,14 @@ mod tests {
     #[tokio::test]
     async fn test_command_spec() {
         let project_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("resources/test/sample-project-command-test");
+            .join("resources/test/sample-projects/command-test/");
         run_test(&project_root).await
     }
 
     #[tokio::test]
     async fn test_lua_script_spec() {
         let project_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("resources/test/sample-project-lua-script-test");
+            .join("resources/test/sample-projects/lua-script-test/");
         run_test(&project_root).await
     }
 

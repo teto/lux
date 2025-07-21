@@ -1536,7 +1536,7 @@ mod tests {
     }
 
     fn init_sample_project_repo(temp_dir: &assert_fs::TempDir) -> Repository {
-        let sample_project: PathBuf = "resources/test/sample-project-source-template/".into();
+        let sample_project: PathBuf = "resources/test/sample-projects/source-template/".into();
         temp_dir.copy_from(&sample_project, &["**"]).unwrap();
         let repo = Repository::init(temp_dir).unwrap();
         let mut opts = RepositoryInitOptions::new();

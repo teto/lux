@@ -11,7 +11,7 @@ use lux_lib::{
 #[tokio::test]
 async fn run_busted_test() {
     let project_root =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("resources/test/sample-project-busted");
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("resources/test/sample-projects/busted/");
     let temp_dir = assert_fs::TempDir::new().unwrap();
     temp_dir.copy_from(&project_root, &["**"]).unwrap();
     let project_root = temp_dir.path();
@@ -34,7 +34,7 @@ async fn run_busted_test() {
 #[tokio::test]
 async fn run_busted_test_no_lock() {
     let project_root =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("resources/test/sample-project-busted");
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("resources/test/sample-projects/busted/");
     let temp_dir = assert_fs::TempDir::new().unwrap();
     temp_dir.copy_from(&project_root, &["**"]).unwrap();
     let project_root = temp_dir.path();
@@ -62,7 +62,7 @@ async fn run_busted_test_no_lock() {
 #[tokio::test]
 async fn non_regression_lockfile_corruption() {
     let sample_project_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("resources/test/sample-project-busted-with-lockfile");
+        .join("resources/test/sample-projects/busted-with-lockfile/");
     let _ = tokio::fs::remove_dir_all(sample_project_dir.join(".lux")).await;
     let temp_dir = assert_fs::TempDir::new().unwrap();
     temp_dir.copy_from(sample_project_dir, &["**"]).unwrap();
@@ -101,8 +101,8 @@ async fn run_busted_nlua_test_no_lock() {
 // Investigation is needed on Windows.
 #[cfg(target_os = "linux")]
 async fn run_busted_nlua_test_impl(no_lock: bool) {
-    let project_root =
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("resources/test/sample-project-busted-nlua");
+    let project_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("resources/test/sample-projects/busted-nlua/");
     let temp_dir = assert_fs::TempDir::new().unwrap();
     temp_dir.copy_from(&project_root, &["**"]).unwrap();
     let project_root = temp_dir.path();

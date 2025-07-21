@@ -518,7 +518,7 @@ mod tests {
     #[tokio::test]
     async fn test_builtin_build() {
         let project_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("resources/test/sample-project-no-build-spec");
+            .join("resources/test/sample-projects/no-build-spec/");
         let tree_dir = assert_fs::TempDir::new().unwrap();
         let config = ConfigBuilder::new()
             .unwrap()

@@ -5,7 +5,7 @@ use std::path::PathBuf;
 #[tokio::test]
 async fn sync_test_dependencies_empty_project() {
     let sample_project_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("resources/test/sample-project-busted-with-lockfile");
+        .join("resources/test/sample-projects/busted-with-lockfile/");
     let _ = tokio::fs::remove_dir_all(sample_project_dir.join(".lux")).await;
     let temp_dir = TempDir::new().unwrap();
     temp_dir.copy_from(sample_project_dir, &["**"]).unwrap();

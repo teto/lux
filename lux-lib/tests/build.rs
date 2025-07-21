@@ -189,7 +189,7 @@ async fn treesitter_parser_build() {
 
 #[tokio::test]
 async fn test_build_local_project_no_source() {
-    let sample_project: PathBuf = "resources/test/sample-project-no-source/".into();
+    let sample_project: PathBuf = "resources/test/sample-projects/no-source/".into();
     let project_root = TempDir::new().unwrap();
     project_root.copy_from(&sample_project, &["**"]).unwrap();
 
@@ -230,7 +230,7 @@ async fn test_build_local_project_no_source() {
 
 #[tokio::test]
 async fn test_build_local_project_only_src() {
-    let sample_project: PathBuf = "resources/test/sample-project-only-src/".into();
+    let sample_project: PathBuf = "resources/test/sample-projects/only-src/".into();
     let project_root = assert_fs::TempDir::new().unwrap();
     project_root.copy_from(&sample_project, &["**"]).unwrap();
 
@@ -323,7 +323,7 @@ fn test_build_multiple_treesitter_parsers() {
 
 #[tokio::test]
 async fn build_project_with_git_dependency() {
-    let sample_project: PathBuf = "resources/test/sample-project-git-dependency/".into();
+    let sample_project: PathBuf = "resources/test/sample-projects/git-dependency/".into();
     let project_root = assert_fs::TempDir::new().unwrap();
     project_root.copy_from(&sample_project, &["**"]).unwrap();
 

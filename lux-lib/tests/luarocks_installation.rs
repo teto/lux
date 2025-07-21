@@ -30,7 +30,7 @@ async fn luarocks_make() {
     let bar = progress.map(|p| p.add(ProgressBar::from("Installing luarocks".to_string())));
     luarocks.ensure_installed(&bar).await.unwrap();
     let project_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("resources/test/sample-project-no-build-spec");
+        .join("resources/test/sample-projects/no-build-spec/");
     let rockspec_path = project_root.join("foo-1.0.0-1.rockspec");
     let build_dir = TempDir::new().unwrap();
     build_dir.copy_from(&project_root, &["**"]).unwrap();

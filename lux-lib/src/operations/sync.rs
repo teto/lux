@@ -304,7 +304,7 @@ mod tests {
         temp_dir
             .copy_from(
                 PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-                    .join("resources/test/sample-project-dependencies"),
+                    .join("resources/test/sample-projects/dependencies/"),
                 &["**"],
             )
             .unwrap();
@@ -333,7 +333,7 @@ mod tests {
         temp_dir
             .copy_from(
                 PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-                    .join("resources/test/sample-project-dependencies"),
+                    .join("resources/test/sample-projects/dependencies/"),
                 &["**"],
             )
             .unwrap();
@@ -371,7 +371,7 @@ mod tests {
         temp_dir
             .copy_from(
                 PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-                    .join("resources/test/sample-project-dependencies"),
+                    .join("resources/test/sample-projects/dependencies/"),
                 &["**"],
             )
             .unwrap();
@@ -406,7 +406,7 @@ mod tests {
         temp_dir
             .copy_from(
                 PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-                    .join("resources/test/sample-project-dependencies"),
+                    .join("resources/test/sample-projects/dependencies/"),
                 &["**"],
             )
             .unwrap();
