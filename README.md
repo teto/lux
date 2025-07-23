@@ -46,6 +46,8 @@
     Lux allows the creation of an `extra.rockspec` file, everything just works.
   - Have a very complex build script? Lux can shell out to `luarocks` if it knows it has
     to preserve maximum compatibility.
+* Automatically adds project dependencies to a [`.luarc.json`](https://luals.github.io/wiki/configuration/#luarcjson-file)
+  file so they can be picked up by [`lua-language-server`](https://luals.github.io/).
 
 > [!WARNING]
 >
