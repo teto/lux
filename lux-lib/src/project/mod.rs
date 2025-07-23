@@ -43,6 +43,9 @@ pub mod project_toml;
 pub use project_toml::PROJECT_TOML;
 
 pub const EXTRA_ROCKSPEC: &str = "extra.rockspec";
+pub(crate) const LUX_DIR_NAME: &str = ".lux";
+const LUARC: &str = ".luarc.json";
+const EMMYRC: &str = ".emmyrc.json";
 
 #[derive(Error, Debug)]
 #[error(transparent)]
@@ -152,6 +155,7 @@ pub struct Project {
 impl UserData for Project {
     fn add_methods<M: mlua::UserDataMethods<Self>>(methods: &mut M) {
         methods.add_method("toml_path", |_, this, ()| Ok(this.toml_path()));
+        methods.add_method("luarc_path", |_, this, ()| Ok(this.luarc_path()));
         methods.add_method("extra_rockspec_path", |_, this, ()| {
             Ok(this.extra_rockspec_path())
         });
@@ -315,6 +319,21 @@ impl Project {
         self.root.join(PROJECT_TOML)
     }
 
+    /// Get the `.luarc.json` or `.emmyrc.json` path.
+    pub(crate) fn luarc_path(&self) -> PathBuf {
+        let luarc_path = self.root.join(LUARC);
+        if luarc_path.is_file() {
+            luarc_path
+        } else {
+            let emmy_path = self.root.join(EMMYRC);
+            if emmy_path.is_file() {
+                emmy_path
+            } else {
+                luarc_path
+            }
+        }
+    }
+
     /// Get the `extra.rockspec` path.
     pub fn extra_rockspec_path(&self) -> PathBuf {
         self.root.join(EXTRA_ROCKSPEC)
@@ -367,7 +386,7 @@ impl Project {
     }
 
     pub(crate) fn default_tree_root_dir(&self) -> PathBuf {
-        self.root.join(".lux")
+        self.root.join(LUX_DIR_NAME)
     }
 
     pub fn tree(&self, config: &Config) -> Result<Tree, ProjectTreeError> {
