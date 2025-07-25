@@ -209,6 +209,8 @@ impl LuaRocksInstallation {
         lua: &LuaInstallation,
     ) -> Result<(), ExecLuaRocksError> {
         let luarocks_paths = Paths::new(&self.tree)?;
+        eprintln!("MATT: Exec");
+
         // Ensure a pure environment so we can do parallel builds
         let temp_dir = tempdir()?;
         let lua_version_str = match lua.version {
@@ -238,6 +240,8 @@ variables = {{
             .map_err(ExecLuaRocksError::WriteLuarocksConfigError)?;
         let luarocks_bin = self.tree.bin().join(LUAROCKS_EXE);
         if !luarocks_bin.is_file() {
+            eprintln!("Could not find luarocks");
+
             return Err(ExecLuaRocksError::LuarocksBinNotFound(luarocks_bin));
         }
         let output = Command::new(luarocks_bin)

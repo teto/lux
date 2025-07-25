@@ -148,6 +148,7 @@
           ];
 
         cargoBuildCommand = "cargo build --profile ${buildType}";
+        # cargoExtraArgs = "-p lux-cli --no-default-features --features lua51,vendored-lua";
         cargoExtraArgs = "-p lux-cli --locked";
 
         postBuild =

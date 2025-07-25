@@ -16,6 +16,9 @@ pub fn apply_build_behaviour(
     force: bool,
     tree: &Tree,
 ) -> Result<Vec<PackageInstallSpec>> {
+
+    eprintln!("MATT: apply_build_behaviour");
+
     let lockfile = tree.lockfile()?;
     Ok(package_reqs
         .into_iter()

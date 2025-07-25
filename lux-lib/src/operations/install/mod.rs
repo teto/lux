@@ -94,6 +94,8 @@ where
 {
     /// Install the packages.
     pub async fn install(self) -> Result<Vec<LocalPackage>, InstallError> {
+        // utils::log_command_output(&output, config),
+        eprintln!("MATT: Install command");
         let install_built = self._build();
         if install_built.packages.is_empty() {
             return Ok(Vec::default());
@@ -180,6 +182,9 @@ async fn install_impl(
     let (dep_tx, mut dep_rx) = tokio::sync::mpsc::unbounded_channel();
     let (build_dep_tx, mut build_dep_rx) = tokio::sync::mpsc::unbounded_channel();
 
+    eprintln!("MATT: install_impl");
+
+
     let lockfile = tree.lockfile()?;
     let build_lockfile = tree.build_tree(config)?.lockfile()?;
 
@@ -241,6 +246,8 @@ async fn install_impl(
             let downloaded_rock = install_spec.downloaded_rock;
             let config = config.clone();
             let tree = tree.clone();
+            eprintln!("MATT: right before tokio::spawn");
+
             let lua = lua.clone();
 
             tokio::spawn({
@@ -376,6 +383,8 @@ async fn install_rockspec(
     let source = rockspec_download.source;
     let package = rockspec.package().clone();
     let bar = progress.map(|p| p.add(ProgressBar::from(format!("💻 Installing {}", &package,))));
+
+    eprintln!("MATT: right before tokio::spawn");
 
     if let Some(BuildBackendSpec::LuaRock(_)) = &rockspec.build().current_platform().build_backend {
         let luarocks_tree = tree.build_tree(config)?;

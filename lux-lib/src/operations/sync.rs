@@ -77,6 +77,8 @@ where
     }
 
     pub async fn sync_build_dependencies(mut self) -> Result<SyncReport, SyncError> {
+
+        eprintln!("sync_build_dependencies");
         if cfg!(target_family = "unix") && !self.extra_packages.is_empty() {
             let toml = self.project.toml().into_local()?;
             if toml
