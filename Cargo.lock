@@ -3202,6 +3202,7 @@ dependencies = [
  "text_trees",
  "tokio",
  "toml 0.9.8",
+ "tracing",
  "url",
  "walkdir",
  "which 8.0.0",

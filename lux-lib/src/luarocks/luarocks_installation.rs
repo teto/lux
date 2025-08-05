@@ -8,7 +8,7 @@ use std::{
 use tempfile::tempdir;
 use thiserror::Error;
 use tokio::process::Command;
-
+use tracing::{info, Level};
 use crate::{
     build::{self, BuildError},
     config::{Config, LuaVersion, LuaVersionUnset},
@@ -117,7 +117,8 @@ impl LuaRocksInstallation {
         progress: &Progress<ProgressBar>,
     ) -> Result<(), LuaRocksInstallError> {
         use crate::{lua_rockspec::RemoteLuaRockspec, package::PackageReq};
-
+        // this creates a new event, outside of any spans.
+        info!(number_of_yaks, "preparing to shave yaks");
         let mut lockfile = self.tree.lockfile()?.write_guard();
 
         let luarocks_req =
