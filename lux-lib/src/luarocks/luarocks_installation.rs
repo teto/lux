@@ -118,7 +118,7 @@ impl LuaRocksInstallation {
     ) -> Result<(), LuaRocksInstallError> {
         use crate::{lua_rockspec::RemoteLuaRockspec, package::PackageReq};
         // this creates a new event, outside of any spans.
-        info!(number_of_yaks, "preparing to shave yaks");
+        info!("Ensuring luarocks presence");
         let mut lockfile = self.tree.lockfile()?.write_guard();
 
         let luarocks_req =

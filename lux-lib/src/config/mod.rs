@@ -20,6 +20,8 @@ use crate::{
     variables::HasVariables,
 };
 
+use tracing::{info, debug};
+
 pub mod external_deps;
 pub mod tree;
 
@@ -122,7 +124,7 @@ impl LuaVersion {
             .or_else(|| {
                 let lib_name = format!("lux-lua{self}");
                 pkg_config::Config::new()
-                    .print_system_libs(false)
+                    .print_system_libs(true)
                     .cargo_metadata(false)
                     .env_metadata(false)
                     .probe(&lib_name)

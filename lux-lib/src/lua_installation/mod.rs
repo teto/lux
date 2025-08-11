@@ -27,6 +27,7 @@ use crate::{
 };
 use lazy_static::lazy_static;
 use tokio::sync::Mutex;
+use tracing::{info, debug};
 
 // Because installing lua is not thread-safe, we have to synchronize with a global Mutex
 lazy_static! {
@@ -108,13 +109,16 @@ impl LuaInstallation {
         progress: &Progress<ProgressBar>,
     ) -> Result<Self, LuaInstallationError> {
         let _lock = NEW_MUTEX.lock().await;
+        info!("Probing lua install");
         if let Some(lua_intallation) = Self::probe(version, config.external_deps()) {
             return Ok(lua_intallation);
         }
         let output = Self::root_dir(version, config);
+        debug!(output = output.to_str(), "Output: ");
         let include_dir = output.join("include");
         let lib_dir = output.join("lib");
         let lua_lib_name = get_lua_lib_name(&lib_dir, version);
+        debug!(lua_lib_name = lua_lib_name);
         if include_dir.is_dir() && lua_lib_name.is_some() {
             let bin_dir = Some(output.join("bin")).filter(|bin_path| bin_path.is_dir());
             let bin = bin_dir
@@ -123,6 +127,9 @@ impl LuaInstallation {
             let lib_dir = output.join("lib");
             let lua_lib_name = get_lua_lib_name(&lib_dir, version);
             let include_dir = Some(output.join("include"));
+            debug!(lua_lib_name = lua_lib_name, include_dir = include_dir.as_ref().unwrap().to_str());
+                // , "toto {:?}", include_dir.is_ok() );
+
             Ok(LuaInstallation {
                 version: version.clone(),
                 dependency_info: ExternalDependencyInfo {
@@ -143,12 +150,15 @@ impl LuaInstallation {
         version: &LuaVersion,
         search_config: &ExternalDependencySearchConfig,
     ) -> Option<Self> {
+        debug!(lua_version = version.version_compatibility_str() , "Probing lua version: ");
         let pkg_name_probes = match version {
             LuaVersion::Lua51 => vec!["lua5.1", "lua-5.1"],
             LuaVersion::Lua52 => vec!["lua5.2", "lua-5.2"],
             LuaVersion::Lua53 => vec!["lua5.3", "lua-5.3"],
             LuaVersion::Lua54 => vec!["lua5.4", "lua-5.4"],
             LuaVersion::LuaJIT | LuaVersion::LuaJIT52 => vec!["luajit"],
+
+
         };
 
         let mut dependency_info = pkg_name_probes
@@ -402,6 +412,7 @@ pub fn detect_installed_lua_version() -> Option<LuaVersion> {
 }
 
 fn find_lua_executable(bin_path: &Path, version: &LuaVersion) -> Option<PathBuf> {
+    debug!(bin_path = bin_path.to_str(), "Looking for lua executable in bin_path");
     std::fs::read_dir(bin_path).ok().and_then(|entries| {
         let bin_files = entries
             .filter_map(Result::ok)
