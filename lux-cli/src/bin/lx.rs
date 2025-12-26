@@ -16,22 +16,40 @@ use lux_lib::{
     lockfile::PinnedState::{Pinned, Unpinned},
 };
 
-use tracing::{info, Level};
-use tracing_subscriber::FmtSubscriber;
+use tracing::{Level, info, level_filters::LevelFilter};
+use tracing_subscriber::{FmtSubscriber, EnvFilter };
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> Result<()> {
 
     // a builder for `FmtSubscriber`.
-    let subscriber = FmtSubscriber::builder()
+    let subscriber = tracing_subscriber::fmt()
+        .with_env_filter(EnvFilter::from_default_env())
         // all spans/events with a level higher than TRACE (e.g, debug, info, warn, etc.)
         // will be written to stdout.
-        .with_max_level(Level::TRACE)
+        // .with_max_level(Level::TRACE)
         // completes the builder.
-        .finish();
+        // Display source code file paths
+        .with_file(true)
+        // Display source code line numbers
+        .with_line_number(true)
+        // .with_env_filter()
+        // .with_env_filter(EnvFilter::from_default_env())
+        // Display the thread ID an event was recorded on
+        // .with_thread_ids(true)
+        // Don't display the event's target (module path)
+        .with_target(false)
+
+        // .with_default_directive(LevelFilter::ERROR.into())
+        .init()
+
+        ;
+
 
     tracing::subscriber::set_global_default(subscriber)
-        .expect("setting default subscriber failed");    let cli = Cli::parse();
+        .expect("setting default subscriber failed");
+
+    let cli = Cli::parse();
 
     let lua_version = cli.lua_version.or({
         if cli.nvim {
