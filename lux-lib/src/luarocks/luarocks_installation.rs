@@ -8,7 +8,7 @@ use std::{
 use tempfile::tempdir;
 use thiserror::Error;
 use tokio::process::Command;
-use tracing::{info, Level};
+use tracing::info;
 use crate::{
     build::{self, BuildError},
     config::{Config, LuaVersion, LuaVersionUnset},

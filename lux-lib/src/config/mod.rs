@@ -20,7 +20,6 @@ use crate::{
     variables::HasVariables,
 };
 
-use tracing::{info, debug};
 
 pub mod external_deps;
 pub mod tree;

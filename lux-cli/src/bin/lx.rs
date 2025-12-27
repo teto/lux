@@ -16,14 +16,13 @@ use lux_lib::{
     lockfile::PinnedState::{Pinned, Unpinned},
 };
 
-use tracing::{Level, info, level_filters::LevelFilter};
-use tracing_subscriber::{FmtSubscriber, EnvFilter };
+use tracing_subscriber::EnvFilter;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> Result<()> {
 
     // a builder for `FmtSubscriber`.
-    let subscriber = tracing_subscriber::fmt()
+    tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::from_default_env())
         // all spans/events with a level higher than TRACE (e.g, debug, info, warn, etc.)
         // will be written to stdout.
@@ -41,13 +40,7 @@ async fn main() -> Result<()> {
         .with_target(false)
 
         // .with_default_directive(LevelFilter::ERROR.into())
-        .init()
-
-        ;
-
-
-    tracing::subscriber::set_global_default(subscriber)
-        .expect("setting default subscriber failed");
+        .init();
 
     let cli = Cli::parse();
 
