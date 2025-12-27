@@ -2,7 +2,9 @@ use std::sync::Arc;
 
 use bon::Builder;
 use itertools::Itertools;
+use mlua::DebugEvent;
 use thiserror::Error;
+use tracing::{Level, debug, event, span};
 
 use crate::{
     build::{Build, BuildBehaviour, BuildError},
@@ -93,12 +95,15 @@ impl<State: build_project_builder::State + build_project_builder::IsComplete>
             .collect_vec();
 
         let build_tree = project.build_tree(config)?;
+
+        debug!(?build_tree);
         let lua =
             LuaInstallation::new_from_config(config, &progress.map(|progress| progress.new_bar()))
                 .await?;
         let luarocks = LuaRocksInstallation::new(config, build_tree.clone())?;
 
         if args.no_lock {
+            debug!(args.no_lock);
             let dependencies_to_install = dependencies
                 .into_iter()
                 .filter(|dep| {
@@ -157,6 +162,7 @@ impl<State: build_project_builder::State + build_project_builder::IsComplete>
                     .map_err(BuildProjectError::InstallBuildDependencies)?;
             }
         } else {
+            span!(Level::TRACE, "sync_lock");
             Sync::new(project, config)
                 .progress(progress.clone())
                 .sync_dependencies()
@@ -171,6 +177,8 @@ impl<State: build_project_builder::State + build_project_builder::IsComplete>
         }
 
         if !args.only_deps {
+            span!(Level::DEBUG, "building_actual_project");
+            // why do I have a Force here ?
             let package = Build::new()
                 .rockspec(&project_toml)
                 .lua(&lua)
@@ -203,6 +211,7 @@ impl<State: build_project_builder::State + build_project_builder::IsComplete>
             }
             Ok(Some(package))
         } else {
+            event!(Level::DEBUG, args.only_deps);
             Ok(None)
         }
     }

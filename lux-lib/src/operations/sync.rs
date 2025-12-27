@@ -17,6 +17,7 @@ use crate::{
 use bon::Builder;
 use itertools::Itertools;
 use thiserror::Error;
+use tracing::{Level, span};
 
 use super::{Install, InstallError, PackageInstallSpec, RemoveError, Uninstall};
 
@@ -77,6 +78,7 @@ where
     }
 
     pub async fn sync_build_dependencies(mut self) -> Result<SyncReport, SyncError> {
+        span!(Level::DEBUG, "sync_build_deps");
         if cfg!(target_family = "unix") && !self.extra_packages.is_empty() {
             let toml = self.project.toml().into_local()?;
             if toml

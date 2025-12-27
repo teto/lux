@@ -11,6 +11,7 @@ use itertools::Itertools;
 use mlua::{ExternalResult, IntoLua};
 use nonempty::NonEmpty;
 use thiserror::Error;
+use tracing::debug;
 
 mod list;
 
@@ -342,6 +343,8 @@ impl Tree {
     pub fn build_tree(&self, config: &Config) -> Result<Self, TreeError> {
         let test_tree_dir = self.test_tree_dir.clone();
         let build_tree_dir = self.build_tree_dir.clone();
+        debug!(?build_tree_dir);
+
         Self::new_with_paths(
             build_tree_dir.clone(),
             test_tree_dir,
