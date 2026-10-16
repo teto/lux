@@ -17,6 +17,7 @@ use bon::Builder;
 use clean_path::Clean;
 use itertools::Itertools;
 use miette::Diagnostic;
+use std::collections::hash_map::Entry;
 use std::collections::HashMap;
 use std::collections::VecDeque;
 use std::fs::File;
@@ -226,10 +227,24 @@ fn add_dir_or_file_entry(
     match &components.len() {
         n if *n > 1 => {
             if let Some(first_dir) = components.pop_front() {
-                let mut entries = HashMap::new();
                 let remainder = components.iter().collect::<PathBuf>();
-                add_dir_or_file_entry(&mut entries, &remainder, digest);
-                dir_map.insert(first_dir, DirOrFileEntry::DirEntry(entries));
+                match dir_map.entry(first_dir) {
+                    Entry::Occupied(mut entry) => match entry.get_mut() {
+                        DirOrFileEntry::DirEntry(entries) => {
+                            add_dir_or_file_entry(entries, &remainder, digest);
+                        }
+                        DirOrFileEntry::FileEntry(_) => {
+                            let mut entries = HashMap::new();
+                            add_dir_or_file_entry(&mut entries, &remainder, digest);
+                            entry.insert(DirOrFileEntry::DirEntry(entries));
+                        }
+                    },
+                    Entry::Vacant(entry) => {
+                        let mut entries = HashMap::new();
+                        add_dir_or_file_entry(&mut entries, &remainder, digest);
+                        entry.insert(DirOrFileEntry::DirEntry(entries));
+                    }
+                }
             }
         }
         _ => {
@@ -238,5 +253,48 @@ fn add_dir_or_file_entry(
                 DirOrFileEntry::FileEntry(digest),
             );
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // non-regression for https://github.com/lumen-oss/lux/issues/2031
+    #[test]
+    fn add_dir_or_file_entry_preserves_siblings_and_nested_entries() {
+        let mut entries = HashMap::new();
+
+        add_dir_or_file_entry(&mut entries, Path::new("docs/a.txt"), "digest-a".into());
+        add_dir_or_file_entry(&mut entries, Path::new("docs/b.txt"), "digest-b".into());
+        add_dir_or_file_entry(
+            &mut entries,
+            Path::new("docs/nested/c.txt"),
+            "digest-c".into(),
+        );
+
+        assert_eq!(
+            entries,
+            HashMap::from([(
+                PathBuf::from("docs"),
+                DirOrFileEntry::DirEntry(HashMap::from([
+                    (
+                        PathBuf::from("a.txt"),
+                        DirOrFileEntry::FileEntry("digest-a".into())
+                    ),
+                    (
+                        PathBuf::from("b.txt"),
+                        DirOrFileEntry::FileEntry("digest-b".into())
+                    ),
+                    (
+                        PathBuf::from("nested"),
+                        DirOrFileEntry::DirEntry(HashMap::from([(
+                            PathBuf::from("c.txt"),
+                            DirOrFileEntry::FileEntry("digest-c".into()),
+                        )])),
+                    ),
+                ])),
+            )])
+        );
     }
 }
