@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [0.49.0](https://github.com/lumen-oss/lux/compare/lux-lsp-v0.48.0...lux-lsp-v0.49.0) `lux-lsp` - 2026-10-23
+
+### Added
+- generate schema for lux.toml & config ([#1989](https://github.com/lumen-oss/lux/pull/1989))
+
+## [0.67.0](https://github.com/lumen-oss/lux/compare/lux-lib-v0.66.0...lux-lib-v0.67.0) `lux-lib` - 2026-10-23
+
+### Added
+- generate schema for lux.toml & config ([#1989](https://github.com/lumen-oss/lux/pull/1989))
+- support installing wally dependencies ([#1977](https://github.com/lumen-oss/lux/pull/1977))
+- [**breaking**] rojo preset / roblox support ([#1975](https://github.com/lumen-oss/lux/pull/1975))
+- *(build)* transpile luau sources when building for lua ([#1971](https://github.com/lumen-oss/lux/pull/1971))
+- *(test)* tiniest test runner for luau ([#1969](https://github.com/lumen-oss/lux/pull/1969))
+- initial Luau support ([#1968](https://github.com/lumen-oss/lux/pull/1968))
+
+### Fixed
+- add `lib` directories to .luarc.json (fixes #2039) ([#2067](https://github.com/lumen-oss/lux/pull/2067))
+- *(config)* normalise base URLs ([#2068](https://github.com/lumen-oss/lux/pull/2068))
+
+## [0.49.0](https://github.com/lumen-oss/lux/compare/v0.48.0...v0.49.0) `lux-cli` - 2026-10-23
+
+### Added
+- generate schema for lux.toml & config ([#1989](https://github.com/lumen-oss/lux/pull/1989))
+- support installing wally dependencies ([#1977](https://github.com/lumen-oss/lux/pull/1977))
+- [**breaking**] rojo preset / roblox support ([#1975](https://github.com/lumen-oss/lux/pull/1975))
+- *(build)* transpile luau sources when building for lua ([#1971](https://github.com/lumen-oss/lux/pull/1971))
+- initial Luau support ([#1968](https://github.com/lumen-oss/lux/pull/1968))
+
 ## [0.48.0](https://github.com/lumen-oss/lux/compare/lux-lsp-v0.47.0...lux-lsp-v0.48.0) `lux-lsp` - 2026-10-22
 
 ### Other
