@@ -70,7 +70,7 @@ tree-sitter-generate = { version = "0.27", default-features = false, features = 
   "pathdiff",
 ] }
 tree-sitter-loader = "0.26"
-url = "2.5"
+url = { version = "2.5", features = ["serde"] }
 vfs = "0.13"
 
 git2 = { workspace = true }
@@ -124,6 +124,7 @@ default = [
 clap = ["dep:clap"]
 gpgme = ["dep:gpgme"]
 luau-transpile = ["dep:kalua"]
+wally = []
 vendored = ["vendored-openssl", "vendored-libgit2"]
 vendored-openssl = ["openssl/vendored", "reqwest/native-tls-vendored"]
 vendored-libgit2 = ["git2/vendored-libgit2"]

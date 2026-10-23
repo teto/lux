@@ -1,4 +1,5 @@
 use std::{
+    collections::HashMap,
     io::{Cursor, Read},
     path::PathBuf,
     string::FromUtf8Error,
@@ -165,7 +166,7 @@ impl RemoteRockDownload {
         package_req: PackageReq,
         source_spec: RockSourceSpec,
     ) -> Result<Self, SearchAndDownloadError> {
-        let package_spec = package_req.try_into()?;
+        let package_spec: PackageSpec = package_req.try_into()?;
         let source_url = Some(match &source_spec {
             RockSourceSpec::Git(GitSource { url, git_ref }) => {
                 let checkout_ref = match git_ref {
@@ -183,8 +184,18 @@ impl RemoteRockDownload {
             }
             RockSourceSpec::File(path) => RemotePackageSourceUrl::File { path: path.clone() },
             RockSourceSpec::Url(url) => RemotePackageSourceUrl::Url { url: url.clone() },
+            RockSourceSpec::Wally(_) => {
+                return Err(SearchAndDownloadError::WallySource(
+                    package_spec.name().to_string(),
+                ))
+            }
         });
-        let rockspec = RemoteLuaRockspec::from_package_and_source_spec(package_spec, source_spec);
+        let rockspec = RemoteLuaRockspec::from_source_spec(
+            package_spec,
+            source_spec,
+            Vec::new(),
+            HashMap::new(),
+        );
         let rockspec_content = rockspec
             .to_lua_remote_rockspec_string()
             .expect("the infallible happened");
@@ -336,6 +347,9 @@ async fn download_remote_rock(
                 source_url: RemotePackageSourceUrl::Url { url },
             })
         }
+        RemotePackageSource::Wally(_) => Err(SearchAndDownloadError::WallySource(
+            remote_package.spec.name().to_string(),
+        )),
         RemotePackageSource::Local => Err(SearchAndDownloadError::LocalSource),
         #[cfg(test)]
         RemotePackageSource::Test => unimplemented!(),
@@ -420,6 +434,12 @@ for local dependencies, use `path` in your lux.toml."#
         url("https://lux.lumen-labs.org/reference/lux-toml#local-dependencies")
     )]
     NonURLSource,
+    #[error("failed to resolve wally package '{0}'")]
+    #[diagnostic(
+        code(lux_lib::wally::unresolved_source),
+        help("this is a bug, please report it.")
+    )]
+    WallySource(String),
     #[error("client error")]
     #[diagnostic(transparent)]
     Request(#[from] RequestError),

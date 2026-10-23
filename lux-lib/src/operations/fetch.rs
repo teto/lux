@@ -5,7 +5,7 @@ use crate::git::{GitRef, GitSource};
 use crate::hash::HasIntegrity;
 use crate::lockfile::RemotePackageSourceUrl;
 use crate::lua_rockspec::{RemoteRockSource, RockSourceSpec};
-use crate::package::PackageSpec;
+use crate::package::{wally, PackageSpec};
 use crate::reqwest::{RequestBuilderExt, RequestError};
 use crate::rockspec::Rockspec;
 use crate::{fs, operations};
@@ -104,7 +104,7 @@ where
                         }
                     }
                 }
-                RockSourceSpec::File(_) => Err(err),
+                RockSourceSpec::File(_) | RockSourceSpec::Wally(_) => Err(err),
             },
             Ok(metadata) => Ok(metadata),
         }
@@ -137,6 +137,12 @@ pub enum FetchSrcError {
         "check that no process is using the directory and you have write permissions."
     ))]
     CleanGitDir(#[source] io::Error),
+    #[error("failed to resolve wally package '{0}'")]
+    #[diagnostic(
+        code(lux_lib::wally::unresolved_source),
+        help("this is a bug, please report it.")
+    )]
+    WallySource(String),
     #[error("unable to compute hash")]
     Hash(#[source] io::Error),
     #[error(transparent)]
@@ -340,14 +346,11 @@ async fn fetch_src_impl<R: Rockspec>(
 
             // NOTE: We don't enforce HTTPS when fetching sources because some rockspecs
             // have HTTP URLs in `source.url`.
-            let response = crate::reqwest::http_client(config)?
+            let request = crate::reqwest::http_client(config)?
                 .get(url.clone())
-                .apply_access_token(config, url)
-                .send()
-                .await?
-                .error_for_status()?
-                .bytes()
-                .await?;
+                .apply_access_token(config, url);
+            let request = wally::apply_content_headers(request, url);
+            let response = request.send().await?.error_for_status()?.bytes().await?;
             let hash = response.hash().await.map_err(FetchSrcError::Hash)?;
             let file_name = url
                 .path_segments()
@@ -374,6 +377,9 @@ async fn fetch_src_impl<R: Rockspec>(
                 hash,
                 source_url: RemotePackageSourceUrl::Url { url: url.clone() },
             }
+        }
+        RockSourceSpec::Wally(_) => {
+            return Err(FetchSrcError::WallySource(rockspec.package().to_string()))
         }
         RockSourceSpec::File(path) => {
             tracing::debug!(message = format!("Copying {}", path.display()).as_str());
