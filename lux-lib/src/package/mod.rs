@@ -419,16 +419,16 @@ impl Display for PackageNameList {
 mod tests {
     use super::*;
 
-    #[tokio::test]
-    async fn parse_name() {
+    #[test]
+    fn parse_name() {
         let mut package_name: PackageName = "neorg".into();
         assert_eq!(package_name.to_string(), "neorg");
         package_name = "LuaFileSystem".into();
         assert_eq!(package_name.to_string(), "luafilesystem");
     }
 
-    #[tokio::test]
-    async fn parse_lua_package() {
+    #[test]
+    fn parse_lua_package() {
         let neorg = PackageSpec::parse("neorg".into(), "1.0.0".into()).unwrap();
         let expected_version = PackageVersion::parse("1.0.0").unwrap();
         assert_eq!(neorg.name().to_string(), "neorg");
@@ -448,8 +448,8 @@ mod tests {
         ));
     }
 
-    #[tokio::test]
-    async fn parse_lua_package_req() {
+    #[test]
+    fn parse_lua_package_req() {
         let mut package_req = PackageReq::new("foo".into(), Some("1.0.0".into())).unwrap();
         assert!(package_req.matches(&PackageSpec::parse("foo".into(), "1.0.0".into()).unwrap()));
         assert!(!package_req.matches(&PackageSpec::parse("bar".into(), "1.0.0".into()).unwrap()));
@@ -522,8 +522,8 @@ mod tests {
         assert!(!package_req.matches(&lua_utils));
     }
 
-    #[tokio::test]
-    pub async fn remote_package_type_priorities() {
+    #[test]
+    pub fn remote_package_type_priorities() {
         let rock_types = vec![
             RemotePackageType::Binary,
             RemotePackageType::Src,
@@ -539,8 +539,8 @@ mod tests {
         );
     }
 
-    #[tokio::test]
-    async fn package_spec_req_roundtrips() {
+    #[test]
+    fn package_spec_req_roundtrips() {
         let spec = PackageSpec::new("foo".into(), "1.0.0-1".parse().unwrap());
         let req: PackageReq = spec.clone().into();
         assert_eq!(spec, req.try_into().unwrap());
@@ -550,8 +550,8 @@ mod tests {
         assert_eq!(spec, req.try_into().unwrap());
     }
 
-    #[tokio::test]
-    async fn package_req_spec_roundtrips() {
+    #[test]
+    fn package_req_spec_roundtrips() {
         let req: PackageReq = "foo@1.0.0".parse().unwrap();
         let spec: PackageSpec = req.clone().try_into().unwrap();
         assert_eq!(req, spec.into());
@@ -561,8 +561,8 @@ mod tests {
         assert_eq!(req, spec.into());
     }
 
-    #[tokio::test]
-    async fn package_spec_parses_same_as_name_version() {
+    #[test]
+    fn package_spec_parses_same_as_name_version() {
         let req: PackageReq = "foo@1.0.0".parse().unwrap();
         let spec: PackageSpec = req.clone().try_into().unwrap();
         let name: PackageName = "foo".into();
