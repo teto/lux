@@ -5,11 +5,24 @@ All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 
+## [0.67.2](https://github.com/lumen-oss/lux/compare/lux-lib-v0.67.1...lux-lib-v0.67.2) `lux-lib` - 2026-10-24
+
+### Added
+- *(schema)* add examples and more detailed descriptions ([#2091](https://github.com/lumen-oss/lux/pull/2091))
+
 ## [0.67.1](https://github.com/lumen-oss/lux/compare/lux-lib-v0.67.0...lux-lib-v0.67.1) `lux-lib` - 2026-10-24
 
 ### Fixed
 - *(release-artifacts)* ensure static linking of gpgme deps ([#2087](https://github.com/lumen-oss/lux/pull/2087))
 - convert `*` SemVer to any luarocks version requirement ([#2086](https://github.com/lumen-oss/lux/pull/2086))
+
+## [0.49.2](https://github.com/lumen-oss/lux/compare/v0.49.1...v0.49.2) `lux-cli` - 2026-10-24
+
+### Added
+- *(cli)* deny lux execution if running as root (closes #840) ([#2082](https://github.com/lumen-oss/lux/pull/2082))
+
+### Fixed
+- *(pack)* don't pack workspace dependencies ([#2092](https://github.com/lumen-oss/lux/pull/2092))
 
 ## [0.49.1](https://github.com/lumen-oss/lux/compare/v0.49.0...v0.49.1) `lux-cli` - 2026-10-24
 
