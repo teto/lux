@@ -1,0 +1,5 @@
+---
+name: lux-codeql
+paths-ignore:
+  - xtask/**
+  - xtask-lua/**
