@@ -920,8 +920,8 @@ fn append_minor_patch_if_missing(version: &str) -> String {
 mod tests {
     use super::*;
 
-    #[tokio::test]
-    async fn parse_semver_version() {
+    #[test]
+    fn parse_semver_version() {
         assert_eq!(
             PackageVersion::parse("1-1").unwrap(),
             PackageVersion::SemVer(SemVer {
@@ -1061,8 +1061,8 @@ mod tests {
         assert!(!req.matches(&PackageVersion::parse("1.2.3-alpha.2").unwrap()));
     }
 
-    #[tokio::test]
-    async fn parse_dev_version() {
+    #[test]
+    fn parse_dev_version() {
         assert_eq!(
             PackageVersion::parse("dev-1").unwrap(),
             PackageVersion::DevVer(DevVer {
@@ -1093,8 +1093,8 @@ mod tests {
         );
     }
 
-    #[tokio::test]
-    async fn parse_dev_version_req() {
+    #[test]
+    fn parse_dev_version_req() {
         assert_eq!(
             PackageVersionReq::parse("dev").unwrap(),
             PackageVersionReq::DevVer(DevVersion::Dev)
@@ -1153,8 +1153,8 @@ mod tests {
         );
     }
 
-    #[tokio::test]
-    async fn package_version_req_semver_roundtrips() {
+    #[test]
+    fn package_version_req_semver_roundtrips() {
         let req = PackageVersionReq::parse("==0.7.1").unwrap();
         assert_eq!(req.to_string(), "==0.7.1");
 
@@ -1174,8 +1174,8 @@ mod tests {
         assert_eq!(req.to_string(), ">=0.7.1, <0.7.2");
     }
 
-    #[tokio::test]
-    async fn package_version_req_devver_roundtrips() {
+    #[test]
+    fn package_version_req_devver_roundtrips() {
         let req = PackageVersionReq::parse("==scm").unwrap();
         assert_eq!(req.to_string(), "==scm");
 
