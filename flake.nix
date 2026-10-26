@@ -122,7 +122,8 @@
                 ])
                 ++ (lib.optional (!isDarwin) self.checks.${system}.git-hooks-check.enabledPackages)
                 ++ (lib.filter (pkg: !(lib.hasPrefix "lua" pkg.name)) pkgs.lux-cli.buildInputs)
-                ++ (lib.filter (pkg: !(lib.hasPrefix "xtask" pkg.name)) pkgs.lux-cli.nativeBuildInputs);
+                ++ (lib.filter (pkg: !(lib.hasPrefix "xtask" pkg.name)) pkgs.lux-cli.nativeBuildInputs)
+                ++ (pkgs.lux-deps {}).nativeBuildInputs;
             };
 
           mkBuildShell = pkgs':
