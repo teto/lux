@@ -312,6 +312,7 @@ in {
     }
     ./lux-loader-setup-hook.sh;
 
+  inherit lux-deps;
   lua5_1_lux = override-lua prev.lua5_1 final.lux-lua51;
   lua5_2_lux = override-lua prev.lua5_2 final.lux-lua52;
   lua5_3_lux = override-lua prev.lua5_3 final.lux-lua53;
