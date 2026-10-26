@@ -208,10 +208,16 @@ impl PackageVersionTemplate {
         project_root: &Path,
         specrev: Option<SpecRev>,
     ) -> Result<PackageVersion, GenerateVersionError> {
-        let specrev = specrev.unwrap_or_default();
         if let Some(version) = &self.0 {
-            Ok(version.clone())
+            Ok(match specrev {
+                Some(specrev) => {
+                    PackageVersion::parse(&format!("{}-{specrev}", version.to_version_string()))
+                        .expect("a generated spec revision preserves a valid package version")
+                }
+                None => version.clone(),
+            })
         } else {
+            let specrev = specrev.unwrap_or_default();
             let repo = find_git_repo(project_root)?;
             if let Some(version) = version_from_semver_tag(&repo, &specrev)? {
                 Ok(version)

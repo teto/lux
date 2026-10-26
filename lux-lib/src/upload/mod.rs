@@ -654,9 +654,9 @@ mod helpers {
             {
                 let package =
                     PackageSpec::new(rockspec.package().clone(), rockspec.version().clone());
-                let existing_rockspec = Download::new(&package.into(), config)
+                let existing_rockspec = Download::new(&package.clone().into(), config)
                     .package_db(package_db)
-                    .download_rockspec()
+                    .download_exact_rockspec(&package)
                     .await?
                     .rockspec;
                 let existing_rockspec_hash =
@@ -697,7 +697,12 @@ mod helpers {
         let response_map: Option<HashMap<String, serde_json::Value>> =
             serde_json::from_str(&server_response_raw_json).ok();
         Ok(response_map.is_some_and(|response_map| {
-            response_map.contains_key("module") && response_map.contains_key("version")
+            response_map
+                .get("module")
+                .is_some_and(|value| !value.is_null())
+                && response_map
+                    .get("version")
+                    .is_some_and(|value| !value.is_null())
         }))
     }
 }
@@ -821,9 +826,94 @@ type = "builtin"
 
     fn expect_rock_missing(server: &Server) {
         server.expect(
-            Expectation::matching(request::path(CHECK_ROCKSPEC_PATH))
-                .respond_with(json_encoded(serde_json::json!({}))),
+            Expectation::matching(request::path(CHECK_ROCKSPEC_PATH)).respond_with(json_encoded(
+                serde_json::json!({ "module": {}, "version": null }),
+            )),
         );
+    }
+
+    #[tokio::test]
+    async fn test_rock_exists_requires_non_null_module_and_version() {
+        for (response, expected) in [
+            (serde_json::json!({}), false),
+            (serde_json::json!({ "module": {}, "version": null }), false),
+            (serde_json::json!({ "module": null, "version": {} }), false),
+            (serde_json::json!({ "module": {}, "version": {} }), true),
+        ] {
+            let server = Server::run();
+            server.expect(
+                Expectation::matching(request::path(CHECK_ROCKSPEC_PATH))
+                    .respond_with(json_encoded(response)),
+            );
+            assert_eq!(
+                helpers::rock_exists(
+                    &reqwest::Client::new(),
+                    &ApiKey::from(API_KEY),
+                    &PackageName::new("foo".into()),
+                    &PackageVersion::parse("1.0.0-1").unwrap(),
+                    &Url::parse(&server.url_str("/")).unwrap(),
+                )
+                .await
+                .unwrap(),
+                expected,
+            );
+        }
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_generate_rockspec_downloads_each_exact_revision() {
+        let server = Server::run();
+        let (_project_dir, _config_dir, project, config, package_db) = ready(&server).await;
+        for revision in 1..=3 {
+            server.expect(
+                Expectation::matching(httptest::matchers::all_of![
+                    request::path(CHECK_ROCKSPEC_PATH),
+                    request::query(httptest::matchers::url_decoded(contains((
+                        "version",
+                        format!("1.0.0-{revision}"),
+                    )))),
+                ])
+                .respond_with(json_encoded(if revision < 3 {
+                    serde_json::json!({ "module": {}, "version": {} })
+                } else {
+                    serde_json::json!({ "module": {}, "version": null })
+                })),
+            );
+        }
+        server.expect(
+            Expectation::matching(request::path("/manifest-5.1.zip"))
+                .respond_with(status_code(404)),
+        );
+        server.expect(
+            Expectation::matching(request::path("/manifest-5.1")).respond_with(
+                status_code(200)
+                    .body(r#"repository = { foo = { ["1.0.0-2"] = { { arch = "rockspec" } } } }"#),
+            ),
+        );
+        for revision in 1u16..=2 {
+            let content = project
+                .toml()
+                .into_remote(Some(revision.into()))
+                .unwrap()
+                .to_lua_remote_rockspec_string()
+                .unwrap()
+                .replace("https://example.com/foo.zip", "https://example.com/old.zip");
+            server.expect(
+                Expectation::matching(request::path(format!("/foo-1.0.0-{revision}.rockspec")))
+                    .respond_with(status_code(200).body(content)),
+            );
+        }
+        let (rockspec, _) = helpers::generate_rockspec(
+            &project,
+            &reqwest::Client::new(),
+            &ApiKey::from(API_KEY),
+            &config,
+            &package_db,
+        )
+        .await
+        .unwrap();
+        assert_eq!(rockspec.version().to_string(), "1.0.0-3");
     }
 
     fn expect_upload(server: &Server, responder: impl Responder + 'static) {

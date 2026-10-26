@@ -65,6 +65,32 @@ impl<'a> Download<'a> {
         }
     }
 
+    /// Download a specific rockspec revision using the configured package sources.
+    pub(crate) async fn download_exact_rockspec(
+        self,
+        package: &PackageSpec,
+    ) -> Result<DownloadedRockspec, SearchAndDownloadError> {
+        let db;
+        let package_db = match self.package_db {
+            Some(db) => db,
+            None => {
+                db = PackageDB::from_config(self.config).await?;
+                &db
+            }
+        };
+        let mut remote = package_db.find(self.package_req, None).await?;
+        remote.spec = package.clone();
+        match download_found_rock(remote, self.config).await? {
+            RemoteRockDownload::RockspecOnly { rockspec_download }
+            | RemoteRockDownload::BinaryRock {
+                rockspec_download, ..
+            }
+            | RemoteRockDownload::SrcRock {
+                rockspec_download, ..
+            } => Ok(rockspec_download),
+        }
+    }
+
     /// Download a `.src.rock` to a file.
     /// `destination_dir` defaults to the current working directory if not set.
     pub async fn download_src_rock_to_file(
@@ -268,6 +294,13 @@ async fn download_remote_rock(
     config: &Config,
 ) -> Result<RemoteRockDownload, SearchAndDownloadError> {
     let remote_package = package_db.find(package_req, None).await?;
+    download_found_rock(remote_package, config).await
+}
+
+async fn download_found_rock(
+    remote_package: crate::package::RemotePackage,
+    config: &Config,
+) -> Result<RemoteRockDownload, SearchAndDownloadError> {
     match &remote_package.source {
         RemotePackageSource::LuarocksRockspec(url) => {
             let package = &remote_package.spec;
