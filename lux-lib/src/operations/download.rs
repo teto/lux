@@ -32,6 +32,7 @@ use crate::{
 pub struct Download<'a> {
     package_req: &'a PackageReq,
     package_db: Option<&'a PackageDB>,
+    exact_package: Option<&'a PackageSpec>,
     config: &'a Config,
 }
 
@@ -41,6 +42,7 @@ impl<'a> Download<'a> {
         Self {
             package_req,
             package_db: None,
+            exact_package: None,
             config,
         }
     }
@@ -54,22 +56,18 @@ impl<'a> Download<'a> {
         }
     }
 
-    /// Download the package's Rockspec.
-    pub async fn download_rockspec(self) -> Result<DownloadedRockspec, SearchAndDownloadError> {
-        match self.package_db {
-            Some(db) => download_rockspec(self.package_req, db, self.config).await,
-            None => {
-                let db = PackageDB::from_config(self.config).await?;
-                download_rockspec(self.package_req, &db, self.config).await
-            }
+    /// Select the exact package version and rockspec revision to download.
+    /// Only applies to [`Self::download_rockspec`]; package sources are still
+    /// resolved using the requirement passed to [`Self::new`].
+    pub fn exact_package(self, package: &'a PackageSpec) -> Self {
+        Self {
+            exact_package: Some(package),
+            ..self
         }
     }
 
-    /// Download a specific rockspec revision using the configured package sources.
-    pub(crate) async fn download_exact_rockspec(
-        self,
-        package: &PackageSpec,
-    ) -> Result<DownloadedRockspec, SearchAndDownloadError> {
+    /// Download the package's Rockspec.
+    pub async fn download_rockspec(self) -> Result<DownloadedRockspec, SearchAndDownloadError> {
         let db;
         let package_db = match self.package_db {
             Some(db) => db,
@@ -79,7 +77,9 @@ impl<'a> Download<'a> {
             }
         };
         let mut remote = package_db.find(self.package_req, None).await?;
-        remote.spec = package.clone();
+        if let Some(package) = self.exact_package {
+            remote.spec = package.clone();
+        }
         match download_found_rock(remote, self.config).await? {
             RemoteRockDownload::RockspecOnly { rockspec_download }
             | RemoteRockDownload::BinaryRock {
@@ -258,28 +258,6 @@ impl From<reqwest::Error> for DownloadRockspecError {
     fn from(err: reqwest::Error) -> Self {
         Self::Request(err.into())
     }
-}
-
-/// Find and download a rockspec for a given package requirement
-async fn download_rockspec(
-    package_req: &PackageReq,
-    package_db: &PackageDB,
-    config: &Config,
-) -> Result<DownloadedRockspec, SearchAndDownloadError> {
-    let rockspec = match download_remote_rock(package_req, package_db, config).await? {
-        RemoteRockDownload::RockspecOnly {
-            rockspec_download: rockspec,
-        } => rockspec,
-        RemoteRockDownload::BinaryRock {
-            rockspec_download: rockspec,
-            ..
-        } => rockspec,
-        RemoteRockDownload::SrcRock {
-            rockspec_download: rockspec,
-            ..
-        } => rockspec,
-    };
-    Ok(rockspec)
 }
 
 #[tracing::instrument(

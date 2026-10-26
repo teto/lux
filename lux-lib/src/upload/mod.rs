@@ -656,7 +656,8 @@ mod helpers {
                     PackageSpec::new(rockspec.package().clone(), rockspec.version().clone());
                 let existing_rockspec = Download::new(&package.clone().into(), config)
                     .package_db(package_db)
-                    .download_exact_rockspec(&package)
+                    .exact_package(&package)
+                    .download_rockspec()
                     .await?
                     .rockspec;
                 let existing_rockspec_hash =
